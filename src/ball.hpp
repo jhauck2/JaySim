@@ -1,4 +1,4 @@
-#include <raymath.h>
+#include <raylib.h>
 
 // A Singleton class of a golf ball
 class Ball {
@@ -16,11 +16,16 @@ private:
 
 public:
     void SetPosition(Vector3 pos);
+    void DrawBall();
 };
 
 void Ball::SetPosition(Vector3 pos) {
     position.x = pos.x;
     position.y = pos.y;
     position.z = pos.z;
+}
+
+void Ball::DrawBall() {
+    DrawSphere(position, radius*3.0f, RED);
 }
 

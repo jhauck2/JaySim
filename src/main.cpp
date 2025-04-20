@@ -19,6 +19,9 @@ int main() {
     InitWindow(screenWidth, screenHeight, title.c_str());
 
     SetTargetFPS(60);
+
+    // Define camera
+    Camera camera = { { 0.0f, 10.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 45.0f, 0 };
     
     // Create ball
     Ball ball1;
@@ -37,9 +40,16 @@ int main() {
         // -------------------------------------------------------------------
         BeginDrawing();
             
-            ClearBackground(RAYWHITE);
+            ClearBackground(WHITE);
 
-            DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+            BeginMode3D(camera);
+
+                DrawGrid(10, 1.0f);
+                ball1.DrawBall();
+
+            EndMode3D();
+
+            //DrawText("Congrats! You created your first window!", 220, 40, 20, LIGHTGRAY);
 
         EndDrawing();
         // -------------------------------------------------------------------
