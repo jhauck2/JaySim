@@ -1,5 +1,6 @@
 #include <iostream>
 #include <raylib.h>
+#include "ball.hpp"
 
 
 std::string version = "V0.0.1";
@@ -18,13 +19,19 @@ int main() {
     InitWindow(screenWidth, screenHeight, title.c_str());
 
     SetTargetFPS(60);
+    
+    // Create ball
+    Ball ball1;
+
+    // Load in the course
     // ------------------------------------------------------------------------
     
     // Main Loop
     while (!WindowShouldClose()) {
         // Update
-        // Some kind of state machine 
         // -------------------------------------------------------------------
+        // Some kind of state machine 
+        //
         
         // Draw
         // -------------------------------------------------------------------
