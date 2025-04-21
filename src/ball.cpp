@@ -7,10 +7,22 @@ void Ball::SetPosition(Vector3 pos) {
     position.z = pos.z;
 }
 
-void Ball::DrawBall() {
-    DrawSphere(position, radius*3.0f, RED);
+Vector3 Ball::GetPosition() {
+    return this->position;
 }
 
-void Ball::UpdateBall(float delta) {
+Vector3 Ball::GetVelocity() {
+    return this->velocity;
+}
+
+Vector3 Ball::GetOmega() {
+    return this->omega;
+}
+
+void Ball::DrawBall() {
+    DrawSphere(this->position, radius*3.0f, RED);
+}
+
+void Ball::UpdateBall(double delta) {
 
 }
