@@ -55,10 +55,11 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
             T_f = Vector3Scale(F_f, Ball::radius*0.8);
             T_f = Vector3RotateByAxisAngle(T_f, Dynamics::y_axis, -PI/2.0f);
         }
+
         
 
         T_g = Vector3Normalize(om);
-        T_g = Vector3Scale(T_g, 2*PI*Ball::radius*Dynamics::nu_g);
+        T_g = Vector3Scale(T_g, 6*PI*Ball::radius*Dynamics::nu_g);
 
     }
     else { // Ball in air
@@ -84,7 +85,7 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
     Vector3 T = Vector3Zero(); // Total Torque
     T = Vector3Subtract(T, T_d); 
     T = Vector3Subtract(T, T_f); 
-    T = Vector3Add(T, T_g);
+    T = Vector3Subtract(T, T_g);
 
 
     Vector3 pos_dot = vel;

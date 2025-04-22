@@ -24,15 +24,15 @@ int main() {
     SetTargetFPS(60);
 
     // Define camera
-    Camera camera = { { 0.0f, 10.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 45.0f, 0 };
+    Camera camera = { { 0.0f, 10.0f, 50.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 45.0f, 0 };
     
     // Create ball
     Ball ball1;
     ball1.position.y = 0.05f;
-    ball1.position.x = -4.0f;
-    ball1.velocity.x = 5.0f;
-    ball1.velocity.y = 10.0f;
-    ball1.omega.z = 300.0f;
+    ball1.position.x = -40.0f;
+    ball1.velocity.x = 20.0f;
+    ball1.velocity.y = 15.0f;
+    ball1.omega.z = 600.0f;
 
     // Load in the course
     // ------------------------------------------------------------------------
@@ -56,7 +56,7 @@ int main() {
 
             BeginMode3D(camera);
 
-                DrawGrid(10, 1.0f);
+                DrawGrid(100, 5.0f);
                 ball1.DrawBall();
 
             EndMode3D();

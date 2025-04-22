@@ -24,7 +24,7 @@ Vector3 Ball::GetOmega() {
 }
 
 void Ball::DrawBall() {
-    DrawSphere(this->position, radius*3.0f, RED);
+    DrawSphere(this->position, radius*5.0f, RED);
     // Draw Shadow on the ground
     Vector3 shadow = this->position;
     shadow.y = 0;
@@ -42,7 +42,10 @@ void Ball::UpdateBall(double delta) {
         b_vel = Vector3Scale(b_vel, Ball::radius);
         b_vel = Vector3Add(b_vel, this->velocity);
         b_vel.y = 0;
-        if (Vector3Equals(b_vel, (Vector3){0.0f,0.0f,0.0f})) { this->slipping = false; }// rolling without slipping
+        if (this->slipping && Vector3Equals(b_vel, (Vector3){0.0f,0.0f,0.0f}) ) { 
+            this->slipping = false; 
+            printf("rollng without slipping\n");
+        }// rolling without slipping
 
         // bounce
         if (this->velocity.y < -1.0f) {
@@ -50,8 +53,10 @@ void Ball::UpdateBall(double delta) {
             if (this->velocity.y < -20.0f) e = 0.120;
             else e = 0.510f + 0.0375*this->velocity.y + 0.000903*this->velocity.y*this->velocity.y;
             this->velocity.y *= -e;
-            this->velocity.x *= 0.9f;
-            this->velocity.z *= 0.9f;
+            this->velocity.x *= 0.8f;
+            this->velocity.z *= 0.8f;
+
+            this->omega = Vector3Scale(this->omega, 0.8);
         }
         else {
             this->velocity.y = 0.0f;
