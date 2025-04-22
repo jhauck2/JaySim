@@ -3,9 +3,44 @@
 #include <raylib.h>
 #include "ball.hpp"
 #include "dynamics.hpp"
+#include "button.hpp"
 
 
 std::string version = "V0.0.1";
+
+// Ball initial conditions
+Vector3 pos0 = {-30.0f, 0.05f, 0.0f};
+Vector3 vel0 = {0.0f, 0.0f, 0.0f};
+Vector3 omg0 = {0.0f, 0.0f, 0.0f};
+Vector3 velh = {20.0f, 10.0f, 0.0f};
+Vector3 omgh = {0.0f, 0.0f, 600.0f};
+
+void resetBall(std::any b) {
+    Ball *ball;
+    try {
+        ball = std::any_cast<Ball*>(b);
+    }
+    catch (const std::bad_any_cast& e) {
+        std::cout << "1) " << e.what() << '\n';
+    }
+    ball->position = pos0;
+    ball->velocity = vel0;
+    ball->omega = omg0;
+}
+
+void hitBall(std::any b) {
+    Ball *ball;
+    try {
+        ball = std::any_cast<Ball*>(b);
+    }
+    catch (const std::bad_any_cast& e) {
+        std::cout << "1) " << e.what() << '\n';
+    }
+    ball->position = pos0;
+    ball->velocity = velh;
+    ball->omega = omgh;
+    ball->slipping = true;
+}
 
 
 int main() {
@@ -23,16 +58,20 @@ int main() {
 
     SetTargetFPS(60);
 
-    // Define camera
-    Camera camera = { { 0.0f, 10.0f, 50.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 45.0f, 0 };
+    // Define camera {position}, {look at}, {up direction}, FOV
+    Camera camera = { { 0.0f, 20.0f, 20.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 80.0f, 0 };
     
     // Create ball
     Ball ball1;
-    ball1.position.y = 0.05f;
-    ball1.position.x = -40.0f;
-    ball1.velocity.x = 20.0f;
-    ball1.velocity.y = 15.0f;
-    ball1.omega.z = 600.0f;
+    resetBall(&ball1);
+
+    // create buttons
+    //Button resetButton((Vector2){20, screenWidth-100}, (Vector2){30, 80}, "Button Test");
+    Button resetButton((Vector2){screenWidth-120, 20}, (Vector2){100, 30}, "Reset Ball");
+    resetButton.callback = resetBall;
+    
+    Button hitButton((Vector2){screenWidth-120, 70}, (Vector2){100, 30}, "Hit Ball");
+    hitButton.callback = hitBall;
 
     // Load in the course
     // ------------------------------------------------------------------------
@@ -47,6 +86,22 @@ int main() {
         Dynamics::rk4(&ball1, delta);
         // Dynamics::simple_integral(&ball1, delta);
         ball1.UpdateBall(delta);
+
+        // Handle button clicks
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            Vector2 mouse_pos = GetMousePosition();
+            // Reset Button
+            if (CheckCollisionPointRec(mouse_pos, (Rectangle){resetButton.position.x, resetButton.position.y, resetButton.size.x, resetButton.size.y})) {
+                resetButton.Click();
+                (*(resetButton.callback))(&ball1);
+            }
+            // Hit Button
+            if (CheckCollisionPointRec(mouse_pos, (Rectangle){hitButton.position.x, hitButton.position.y, hitButton.size.x, hitButton.size.y})) {
+                hitButton.Click();
+                (*(hitButton.callback))(&ball1);
+            }
+        }
+        
 
         // Draw
         // -------------------------------------------------------------------
@@ -67,6 +122,10 @@ int main() {
 
             DrawText(vel_text, 20, 20, 14, BLACK);
             DrawText(spin_text, 20, 40, 14, BLACK);
+
+            // Draw Buttons
+            resetButton.DrawButton();
+            hitButton.DrawButton();
 
         EndDrawing();
         // -------------------------------------------------------------------
