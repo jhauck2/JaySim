@@ -13,6 +13,8 @@ public:
     static constexpr double I = 0.4*mass*radius*radius; // Moment of inertia
     static constexpr double S = 8.0/3.0*PI*radius*radius*radius; // Magnus coefficient
     static constexpr double u_k = 0.4; // Friction coefficent with ground
+    static constexpr double u_kr = 0.2; // Friction of rolling while not slipping
+    bool slipping = true;
     Vector3 position = {0.0f, 0.0f, 0.0f};
     Vector3 velocity = {0.0f, 0.0f, 0.0f};
     Vector3 omega = {0.0f, 0.0f, 0.0f};

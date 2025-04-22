@@ -2,10 +2,11 @@
 #include "raymath.h"
 #include <stdio.h>
 
+
 int print_timer = 0;
 
 
-std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_ground) {
+std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_ground, bool slipping) {
     Vector3 F_g = {0.0f, -9.81f*Ball::mass, 0.0f}; // Gravity
     Vector3 F_m = {0.0f, 0.0f, 0.0f}; // Magnus force
     Vector3 F_d = {0.0f, 0.0f, 0.0f}; // Drag force
@@ -32,11 +33,9 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
         Cd = 0.0000000000191f*Re*Re - 0.0000054f*Re + 0.56f;
     }
 
-    // TODO: Implement ground contact dynamics
     if (on_ground) {
-        // Force of viscous torque from grass
-        // TODO: where does this equation come from?
-        F_gd = Vector3Scale(vel, 420*PI*Ball::radius*Dynamics::nu_g);
+        // Force of viscous drag from grass
+        F_gd = Vector3Scale(vel, 6*PI*Ball::radius*Dynamics::nu_g);
         F_gd.y = 0;
 
         // velocity of the bottom of the ball relative to the ground with spin included
@@ -44,22 +43,22 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
         b_vel = Vector3Scale(b_vel, Ball::radius);
         b_vel = Vector3Add(b_vel, vel);
         b_vel.y = 0;
-        if (Vector3Equals(b_vel, (Vector3){0.0f,0.0f,0.0f})) { // rolling without slipping
-            b_vel = Vector3Zero();
+        if (!slipping) { // rolling without slipping
+            b_vel = Vector3Normalize(vel);
+            F_f = Vector3Scale(b_vel, Ball::u_k*Ball::mass*9.81);
         }
-        else {
+        else { // Ball slipping on the ground
             // normalize this velocity to get direction
             b_vel = Vector3Normalize(b_vel); 
+            F_f = Vector3Scale(b_vel, Ball::u_k*Ball::mass*9.81);
+            // torque on the ball from the frictional force
+            T_f = Vector3Scale(F_f, Ball::radius*0.8);
+            T_f = Vector3RotateByAxisAngle(T_f, Dynamics::y_axis, -PI/2.0f);
         }
-        // normalize this velocity to get direction
-        b_vel = Vector3Normalize(b_vel);
-        F_f = Vector3Scale(b_vel, Ball::u_k*Ball::mass*9.81);
-        // torque on the ball from the frictional force
-        T_f = Vector3Scale(F_f, Ball::radius);
-        T_f = Vector3RotateByAxisAngle(T_f, Dynamics::y_axis, -PI/2.0f);
+        
 
-        T_g = Vector3Scale(om, S*8280.0f*Dynamics::nu_g);
-        //T_g = Vector3Scale(om, 0.1f);
+        T_g = Vector3Normalize(om);
+        T_g = Vector3Scale(T_g, 2*PI*Ball::radius*Dynamics::nu_g);
 
     }
     else { // Ball in air
@@ -67,8 +66,11 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
         F_m = Vector3CrossProduct(om, vel);
         F_m = Vector3Scale(F_m, S);
         // Viscous torque - factor of 480 used to get correct decay rate
-        // TODO: More research seems to be needed ^^
-        T_d = Vector3Scale(om, S*480.0f*Dynamics::nu);
+        // Reference 3D Golf Ball Simulation pdf
+        float Cdm = Cd / 3.0f;
+        T_d = Vector3Normalize(om);
+        T_d = Vector3Scale(T_d, 0.5f*Cdm*Dynamics::rho*Ball::A);
+        //T_d = Vector3Scale(om, S*480.0f*Dynamics::nu);
         // Drag
         F_d = Vector3Multiply(vel, vel);
         F_d = Vector3Scale(F_d, Cd*Dynamics::rho*Ball::A/2.0f);
@@ -112,7 +114,7 @@ void Dynamics::rk4(Ball *ball, double delta_time) {
     K3.assign(K1.begin(), K1.end());
     K4.assign(K1.begin(), K1.end());
 
-    K1 = get_x_dot(x0[0], x0[1], x0[2], ball->on_ground);
+    K1 = get_x_dot(x0[0], x0[1], x0[2], ball->on_ground, ball->slipping);
 
     // K2 = step*get_x_dot(x0+0.5*K1)
     for (int i=0; i<3; i++) {
@@ -121,7 +123,7 @@ void Dynamics::rk4(Ball *ball, double delta_time) {
         x[i] = Vector3Add(x[i], x0[i]);
     }
 
-    K2 = get_x_dot(x[0], x[1], x[2], ball->on_ground);
+    K2 = get_x_dot(x[0], x[1], x[2], ball->on_ground, ball->slipping);
 
     // K3 = step*get_x_dot(x0 + 0.5*K2)
     for (int i=0; i<3; i++) {
@@ -130,13 +132,13 @@ void Dynamics::rk4(Ball *ball, double delta_time) {
         x[i] = Vector3Add(x[i], x0[i]);
     }
 
-    K3 = get_x_dot(x[0], x[1], x[2], ball->on_ground);
+    K3 = get_x_dot(x[0], x[1], x[2], ball->on_ground, ball->slipping);
     for (int i=0; i<3; i++) {
         K3[i] = Vector3Scale(K3[i], delta_time);
         x[i] = Vector3Add(K3[i], x0[i]);
     }
 
-    K4 = get_x_dot(x[0], x[1], x[2], ball->on_ground);
+    K4 = get_x_dot(x[0], x[1], x[2], ball->on_ground, ball->slipping);
     for (int i=0; i<3; i++) {K4[i] = Vector3Scale(K4[i], delta_time);}
 
     // value = x0 + K1/6 + K2 /3 + K3/3 + K4/6
@@ -169,7 +171,7 @@ void Dynamics::simple_integral(Ball *ball, double delta_time) {
                                  {0.0f, 0.0f, 0.0f},
                                  {0.0f, 0.0f, 0.0f} };
     
-    x_dot = get_x_dot(x0[0], x0[1], x0[2], ball->on_ground);
+    x_dot = get_x_dot(x0[0], x0[1], x0[2], ball->on_ground, ball->slipping);
     for (int i=0; i<3; i++) {
         x1[i] = Vector3Scale(x_dot[i], delta_time);
         x1[i] = Vector3Add(x1[i], x0[i]);

@@ -7,7 +7,7 @@ public:
     static constexpr double nu = 0.0000181; // Air Viscosity
     static constexpr double nu_k = 0.0000148; // Air Kinematic Viscosity
 
-    static constexpr double nu_g = 0.00012; // Grass Viscosity (estimate somewhere between air and water)
+    static constexpr double nu_g = 0.0012; // Grass Viscosity (estimate somewhere between air and water)
 
     // define some common vectors
     static constexpr Vector3 x_axis = {1.0f, 0.0f, 0.0f};

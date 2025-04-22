@@ -19,6 +19,7 @@ int main() {
     std::string title = "JaySim - " + version;
 
     InitWindow(screenWidth, screenHeight, title.c_str());
+    SetWindowMonitor(0);
 
     SetTargetFPS(60);
 
@@ -27,10 +28,11 @@ int main() {
     
     // Create ball
     Ball ball1;
-    ball1.position.y = 5.05f;
+    ball1.position.y = 0.05f;
     ball1.position.x = -4.0f;
-    ball1.velocity.x = 1.0f;
-    ball1.omega.z = 0.0f;
+    ball1.velocity.x = 5.0f;
+    ball1.velocity.y = 10.0f;
+    ball1.omega.z = 300.0f;
 
     // Load in the course
     // ------------------------------------------------------------------------
@@ -44,18 +46,8 @@ int main() {
         // Some kind of state machine 
         Dynamics::rk4(&ball1, delta);
         // Dynamics::simple_integral(&ball1, delta);
-        // Check if ball is onground 
-        if (ball1.position.y < Ball::radius) {
-            ball1.on_ground = true;
-            ball1.position.y = Ball::radius;
-            if (ball1.velocity.y < -1.0f) {
-                ball1.velocity.y *= -0.7f;
-            }
-            else {
-                ball1.velocity.y = 0.0f;
-            }
-        }
-        else ball1.on_ground = false;
+        ball1.UpdateBall(delta);
+
         // Draw
         // -------------------------------------------------------------------
         BeginDrawing();
