@@ -1,9 +1,16 @@
 #include <stdio.h>
 #include <iostream>
 #include <raylib.h>
+#include <raymath.h>
 #include "ball.hpp"
 #include "dynamics.hpp"
 #include "button.hpp"
+
+#define RLIGHTS_IMPLEMENTATION
+#include "rlights.h"
+
+#define GLSL_VERSION 330
+
 
 
 std::string version = "V0.0.1";
@@ -13,8 +20,8 @@ Vector3 pos0 = {0.0f, 0.05f, 0.0f};
 Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
-Vector3 velh = {20.0f, 15.0f, 0.0f};
-Vector3 omgh = {0.0f, 0.0f, 600.0f};
+Vector3 velh = {40.0f, 20.0f, 0.0f};
+Vector3 omgh = {0.0f, 0.0f, 60.0f};
 
 void resetBall(std::any b) {
     Ball *ball;
@@ -52,16 +59,22 @@ int main() {
     const int screenWidth = 1500;
     const int screenHeight = 825;
 
+    SetConfigFlags(FLAG_MSAA_4X_HINT); // Enable Multi Sampling Anti Aliasing 4x (if available)
+
     std::string title = "JaySim - " + version;
 
     InitWindow(screenWidth, screenHeight, title.c_str());
     SetWindowMonitor(0);
 
-    SetTargetFPS(60);
-
     // Define camera {position}, {look at}, {up direction}, FOV
-    Camera camera = { { -20.0f, 20.0f, 20.0f }, { 10.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 80.0f, 0 };
     
+    Camera camera = { 0 };
+    camera.position = (Vector3){ -10.0f, 5.0f, 0.0f };
+    camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
+    camera.up = (Vector3){0.0f, 1.0f, 0.0f };
+    camera.fovy = 60.0f;
+    camera.projection = CAMERA_PERSPECTIVE;
+
     // Create ball
     Ball ball1;
     resetBall(&ball1);
@@ -74,18 +87,26 @@ int main() {
     Button hitButton((Vector2){screenWidth-120, 70}, (Vector2){100, 30}, "Hit Ball");
     hitButton.callback = hitBall;
 
+
     // Load in the course
     // ------------------------------------------------------------------------
-    // Load monke
-    Model monke = LoadModel("Resources/Monke.glb");
-    Vector3 monke_pos = {0.0f, 0.0f, 10.0f};
-    BoundingBox monke_bounds = GetMeshBoundingBox(monke.meshes[0]);
+    // Load Skybox
+    Model skybox = LoadModel("Resources/Models/Skybox.glb"); // skybox  should be rendered at the camera position
+    // Load Range
+    Model range = LoadModel("Resources/Models/Range.glb");
+    Vector3 range_pos = {180.0, 0.0, 0.0};
+    range.transform = MatrixRotateXYZ((Vector3){0.0f, PI/2.0f, 0.0f});
+    Model monke = LoadModel("Resources/Models/Monke.glb");
+    Vector3 monke_pos = {0.0f, 1.0f, 2.0f};
+
+    SetTargetFPS(60);
     
     // Main Loop
     while (!WindowShouldClose()) {
         // Update
         // -------------------------------------------------------------------
         float delta = GetFrameTime();
+        //UpdateCamera(&camera, CAMERA_ORBITAL);
 
         // Some kind of state machine 
         Dynamics::rk4(&ball1, delta);
@@ -107,7 +128,6 @@ int main() {
             }
         }
         
-
         // Draw
         // -------------------------------------------------------------------
         BeginDrawing();
@@ -116,18 +136,22 @@ int main() {
 
             BeginMode3D(camera);
 
-                DrawGrid(100, 5.0f);
+                DrawModel(range, range_pos, 1.0f, WHITE);
+                //DrawModel(monke, monke_pos, 1.0f, WHITE);
+                DrawModel(skybox, camera.position, 1.0f, WHITE);
                 ball1.DrawBall();
-                DrawModel(monke, monke_pos, 1.0f, WHITE);
-
+                
             EndMode3D();
             char vel_text[50];
             char spin_text[50];
+            char dist_text[50];
             sprintf(vel_text, "vel: %8.4f %8.4f %8.4f", ball1.velocity.x, ball1.velocity.y, ball1.velocity.z);
             sprintf(spin_text, "omg: %8.4f %8.4f %8.4f", ball1.omega.x, ball1.omega.y, ball1.omega.z);
+            sprintf(dist_text, "distance: %d", (int)Vector3Length(ball1.position));
 
             DrawText(vel_text, 20, 20, 14, BLACK);
             DrawText(spin_text, 20, 40, 14, BLACK);
+            DrawText(dist_text, 20, 60, 14, BLACK);
 
             // Draw Buttons
             resetButton.DrawButton();
@@ -139,6 +163,7 @@ int main() {
 
     // De-Initialization
     // ------------------------------------------------------------------------
+
     CloseWindow();
     // ------------------------------------------------------------------------
     

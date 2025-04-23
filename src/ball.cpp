@@ -24,7 +24,7 @@ Vector3 Ball::GetOmega() {
 }
 
 void Ball::DrawBall() {
-    DrawSphere(this->position, radius*5.0f, RED);
+    DrawSphere(Vector3Add(this->position, (Vector3){0.0f,radius*10.0f,0.0f}), radius*10.0f, WHITE);
     // Draw Shadow on the ground
     Vector3 shadow = this->position;
     shadow.y = 0;
