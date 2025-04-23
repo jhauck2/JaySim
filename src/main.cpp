@@ -9,10 +9,11 @@
 std::string version = "V0.0.1";
 
 // Ball initial conditions
-Vector3 pos0 = {-30.0f, 0.05f, 0.0f};
+Vector3 pos0 = {0.0f, 0.05f, 0.0f};
 Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
-Vector3 velh = {20.0f, 10.0f, 0.0f};
+
+Vector3 velh = {20.0f, 15.0f, 0.0f};
 Vector3 omgh = {0.0f, 0.0f, 600.0f};
 
 void resetBall(std::any b) {
@@ -48,8 +49,8 @@ int main() {
     // Initialization
     // ------------------------------------------------------------------------
     
-    const int screenWidth = 1200;
-    const int screenHeight = 675;
+    const int screenWidth = 1500;
+    const int screenHeight = 825;
 
     std::string title = "JaySim - " + version;
 
@@ -59,7 +60,7 @@ int main() {
     SetTargetFPS(60);
 
     // Define camera {position}, {look at}, {up direction}, FOV
-    Camera camera = { { 0.0f, 20.0f, 20.0f }, { 0.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 80.0f, 0 };
+    Camera camera = { { -20.0f, 20.0f, 20.0f }, { 10.0f, 0.0f, 0.0f }, {0.0f, 1.0f, 0.0f }, 80.0f, 0 };
     
     // Create ball
     Ball ball1;
@@ -75,6 +76,10 @@ int main() {
 
     // Load in the course
     // ------------------------------------------------------------------------
+    // Load monke
+    Model monke = LoadModel("Resources/Monke.glb");
+    Vector3 monke_pos = {0.0f, 0.0f, 10.0f};
+    BoundingBox monke_bounds = GetMeshBoundingBox(monke.meshes[0]);
     
     // Main Loop
     while (!WindowShouldClose()) {
@@ -113,6 +118,7 @@ int main() {
 
                 DrawGrid(100, 5.0f);
                 ball1.DrawBall();
+                DrawModel(monke, monke_pos, 1.0f, WHITE);
 
             EndMode3D();
             char vel_text[50];

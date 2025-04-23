@@ -20,5 +20,5 @@ void Button::DrawButton() {
 }
 
 void Button::Click(){
-    printf("Click! %s\n", this->text.c_str());
+    // printf("Click! %s\n", this->text.c_str());
 }
