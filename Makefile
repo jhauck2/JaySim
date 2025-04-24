@@ -1,4 +1,4 @@
-build/jSim: src/main.cpp src/ball.hpp src/button.hpp build/ball.o src/dynamics.hpp build/dynamics.o build/button.o
+build/jSim: src/main.cpp src/ball.hpp src/button.hpp src/jayShader.hpp build/ball.o src/dynamics.hpp build/dynamics.o build/button.o
 	g++ -Wall -g -I ./src src/main.cpp -L /usr/local/lib64 -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 -o build/jSim build/ball.o build/dynamics.o build/button.o
 
 build/ball.o: src/ball.hpp src/ball.cpp

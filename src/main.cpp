@@ -5,6 +5,7 @@
 #include "ball.hpp"
 #include "dynamics.hpp"
 #include "button.hpp"
+#include "jayShader.hpp"
 
 #define RLIGHTS_IMPLEMENTATION
 #include "rlights.h"
@@ -21,7 +22,7 @@ Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
 Vector3 velh = {40.0f, 20.0f, 0.0f};
-Vector3 omgh = {0.0f, 0.0f, 60.0f};
+Vector3 omgh = {0.0f, 0.0f, 600.0f};
 
 void resetBall(std::any b) {
     Ball *ball;
@@ -47,7 +48,6 @@ void hitBall(std::any b) {
     ball->position = pos0;
     ball->velocity = velh;
     ball->omega = omgh;
-    ball->slipping = true;
 }
 
 
@@ -70,7 +70,6 @@ int main() {
     
     Camera camera = { 0 };
     camera.position = (Vector3){ -30.0f, 20.0f, 0.0f };
-    //camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
     camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
     camera.up = (Vector3){0.0f, 1.0f, 0.0f };
     camera.fovy = 60.0f;
@@ -91,30 +90,8 @@ int main() {
     // Load Shaders
     // ------------------------------------------------------------------------
     // Load PBR shader and setup all required locations
-    Shader shader = LoadShader("Resources/Shaders/pbr.vs", "Resources/Shaders/pbr.fs");
-    shader.locs[SHADER_LOC_MAP_ALBEDO] = GetShaderLocation(shader, "albedoMap");
-    shader.locs[SHADER_LOC_MAP_METALNESS] = GetShaderLocation(shader, "mraMap");
-    shader.locs[SHADER_LOC_MAP_NORMAL] = GetShaderLocation(shader, "normalMap");
-    shader.locs[SHADER_LOC_MAP_EMISSION] = GetShaderLocation(shader, "emissiveMap");
-    shader.locs[SHADER_LOC_COLOR_DIFFUSE] = GetShaderLocation(shader, "albedoColor");
-
-    // Setup additional required shader locations, including lights data
-    shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
-    int lightCountLoc = GetShaderLocation(shader, "numOfLights");
-    int maxLightCount = MAX_LIGHTS;
-    SetShaderValue(shader, lightCountLoc, &maxLightCount, SHADER_UNIFORM_INT);
-
-    // Setup ambient color and intensity parameters
-    float ambientIntensity = 0.1f;
-    Color ambientColor = (Color){ 255, 255, 135, 255 };
-    Vector3 ambientColorNormalized = (Vector3){ ambientColor.r/255.0f, ambientColor.g/255.0f, ambientColor.b/255.0f };
-    SetShaderValue(shader, GetShaderLocation(shader, "ambientColor"), &ambientColorNormalized, SHADER_UNIFORM_VEC3);
-    SetShaderValue(shader, GetShaderLocation(shader, "ambient"), &ambientIntensity, SHADER_UNIFORM_FLOAT);
-
-    // Get location for shader parameters that can be modified in real time
-    int emissiveIntensityLoc = GetShaderLocation(shader, "emissivePower");
-    int emissiveColorLoc = GetShaderLocation(shader, "emissiveColor");
-    int textureTilingLoc = GetShaderLocation(shader, "tiling");
+    Shader shader;
+    initShader(&shader, "Resources/Shaders/pbr.vs", "Resources/Shaders/pbr.fs");
 
 
     // Load in the course
