@@ -21,8 +21,9 @@ Vector3 pos0 = {0.0f, 0.05f, 0.0f};
 Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
-Vector3 velh = {40.0f, 20.0f, 0.0f};
-Vector3 omgh = {0.0f, 0.0f, 600.0f};
+// 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm
+Vector3 velh = {44.7*cos(20.8*PI/180.0)*cos(1.7*PI/180.0), 44.7*sin(20.8*PI/180.0), 44.7*sin(1.7*PI/180)};
+Vector3 omgh = {0.0f, 0.0f, 784.0f};
 
 void resetBall(std::any b) {
     Ball *ball;
@@ -182,7 +183,7 @@ int main() {
             char dist_text[50];
             sprintf(vel_text, "vel: %8.4f %8.4f %8.4f", ball1.velocity.x, ball1.velocity.y, ball1.velocity.z);
             sprintf(spin_text, "omg: %8.4f %8.4f %8.4f", ball1.omega.x, ball1.omega.y, ball1.omega.z);
-            sprintf(dist_text, "distance: %d", (int)Vector3Length(ball1.position));
+            sprintf(dist_text, "distance: %d", (int)ball1.position.x);
 
             DrawText(vel_text, 20, 20, 14, BLACK);
             DrawText(spin_text, 20, 40, 14, BLACK);
