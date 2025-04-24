@@ -69,7 +69,8 @@ int main() {
     // Define camera {position}, {look at}, {up direction}, FOV
     
     Camera camera = { 0 };
-    camera.position = (Vector3){ -10.0f, 5.0f, 0.0f };
+    camera.position = (Vector3){ -30.0f, 20.0f, 0.0f };
+    //camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
     camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
     camera.up = (Vector3){0.0f, 1.0f, 0.0f };
     camera.fovy = 60.0f;
@@ -87,6 +88,34 @@ int main() {
     Button hitButton((Vector2){screenWidth-120, 70}, (Vector2){100, 30}, "Hit Ball");
     hitButton.callback = hitBall;
 
+    // Load Shaders
+    // ------------------------------------------------------------------------
+    // Load PBR shader and setup all required locations
+    Shader shader = LoadShader("Resources/Shaders/pbr.vs", "Resources/Shaders/pbr.fs");
+    shader.locs[SHADER_LOC_MAP_ALBEDO] = GetShaderLocation(shader, "albedoMap");
+    shader.locs[SHADER_LOC_MAP_METALNESS] = GetShaderLocation(shader, "mraMap");
+    shader.locs[SHADER_LOC_MAP_NORMAL] = GetShaderLocation(shader, "normalMap");
+    shader.locs[SHADER_LOC_MAP_EMISSION] = GetShaderLocation(shader, "emissiveMap");
+    shader.locs[SHADER_LOC_COLOR_DIFFUSE] = GetShaderLocation(shader, "albedoColor");
+
+    // Setup additional required shader locations, including lights data
+    shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(shader, "viewPos");
+    int lightCountLoc = GetShaderLocation(shader, "numOfLights");
+    int maxLightCount = MAX_LIGHTS;
+    SetShaderValue(shader, lightCountLoc, &maxLightCount, SHADER_UNIFORM_INT);
+
+    // Setup ambient color and intensity parameters
+    float ambientIntensity = 0.1f;
+    Color ambientColor = (Color){ 255, 255, 135, 255 };
+    Vector3 ambientColorNormalized = (Vector3){ ambientColor.r/255.0f, ambientColor.g/255.0f, ambientColor.b/255.0f };
+    SetShaderValue(shader, GetShaderLocation(shader, "ambientColor"), &ambientColorNormalized, SHADER_UNIFORM_VEC3);
+    SetShaderValue(shader, GetShaderLocation(shader, "ambient"), &ambientIntensity, SHADER_UNIFORM_FLOAT);
+
+    // Get location for shader parameters that can be modified in real time
+    int emissiveIntensityLoc = GetShaderLocation(shader, "emissivePower");
+    int emissiveColorLoc = GetShaderLocation(shader, "emissiveColor");
+    int textureTilingLoc = GetShaderLocation(shader, "tiling");
+
 
     // Load in the course
     // ------------------------------------------------------------------------
@@ -94,10 +123,27 @@ int main() {
     Model skybox = LoadModel("Resources/Models/Skybox.glb"); // skybox  should be rendered at the camera position
     // Load Range
     Model range = LoadModel("Resources/Models/Range.glb");
+    range.materials[0].shader = shader;
+
+    // Setup materials[0].maps default parameters
+    range.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
+    range.materials[0].maps[MATERIAL_MAP_METALNESS].value = 0.5f;
+    range.materials[0].maps[MATERIAL_MAP_ROUGHNESS].value = 0.5f;
+    range.materials[0].maps[MATERIAL_MAP_OCCLUSION].value = 1.0f;
+    range.materials[0].maps[MATERIAL_MAP_EMISSION].color = (Color){ 255, 162, 0, 255 };
+
     Vector3 range_pos = {180.0, 0.0, 0.0};
     range.transform = MatrixRotateXYZ((Vector3){0.0f, PI/2.0f, 0.0f});
     Model monke = LoadModel("Resources/Models/Monke.glb");
     Vector3 monke_pos = {0.0f, 1.0f, 2.0f};
+
+    // Create some lights
+    Light lights[MAX_LIGHTS] = { 0 };
+    lights[0] = CreateLight(LIGHT_POINT, (Vector3){ -1.0f, 1.0f, -2.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, YELLOW, 4.0f, shader);
+    lights[1] = CreateLight(LIGHT_POINT, (Vector3){ 2.0f, 1.0f, 1.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, GREEN, 3.3f, shader);
+    lights[2] = CreateLight(LIGHT_POINT, (Vector3){ -2.0f, 1.0f, 1.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, RED, 8.3f, shader);
+    lights[3] = CreateLight(LIGHT_POINT, (Vector3){ 1.0f, 1.0f, -2.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, BLUE, 2.0f, shader);
+
 
     SetTargetFPS(60);
     
@@ -106,7 +152,12 @@ int main() {
         // Update
         // -------------------------------------------------------------------
         float delta = GetFrameTime();
+
         //UpdateCamera(&camera, CAMERA_ORBITAL);
+
+        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
+        float cameraPos[3] = {camera.position.x, camera.position.y, camera.position.z};
+        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
         // Some kind of state machine 
         Dynamics::rk4(&ball1, delta);
@@ -132,11 +183,18 @@ int main() {
         // -------------------------------------------------------------------
         BeginDrawing();
             
-            ClearBackground(WHITE);
+            ClearBackground(BLACK);
 
             BeginMode3D(camera);
 
+                // Set range model texture tiling and emissive color parameters on shader
+                Vector4 rangeEmissiveColor = ColorNormalize(range.materials[0].maps[MATERIAL_MAP_EMISSION].color);
+                SetShaderValue(shader, emissiveColorLoc, &rangeEmissiveColor, SHADER_UNIFORM_VEC4);
+                float emissiveIntensity = 0.01f;
+                SetShaderValue(shader, emissiveIntensityLoc, &emissiveIntensity, SHADER_UNIFORM_FLOAT);
+
                 DrawModel(range, range_pos, 1.0f, WHITE);
+
                 //DrawModel(monke, monke_pos, 1.0f, WHITE);
                 DrawModel(skybox, camera.position, 1.0f, WHITE);
                 ball1.DrawBall();
@@ -163,6 +221,12 @@ int main() {
 
     // De-Initialization
     // ------------------------------------------------------------------------
+    range.materials[0].shader = (Shader){ 0 };
+    UnloadMaterial(range.materials[0]);
+    range.materials[0].maps = NULL;
+    UnloadModel(range);
+    
+    UnloadShader(shader);       // Unload Shader
 
     CloseWindow();
     // ------------------------------------------------------------------------
