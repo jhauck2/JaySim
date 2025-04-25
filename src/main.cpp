@@ -14,7 +14,9 @@
 
 #define GLSL_VERSION 330
 
+// Display Settings
 int display_units = 1; // 0 -> Meters, 1 -> Yards/MPH
+bool dynamics_debug = false; // when true, displays velocity and angular velocity vectors
 
 std::string version = "V0.0.1";
 
@@ -39,6 +41,8 @@ void resetBall(std::any b) {
     ball->velocity = vel0;
     ball->omega = omg0;
     ball->state = Ball::REST;
+    ball->carry = 0.0;
+    ball->ClearTrail();
 }
 
 void hitBall(std::any b) {
@@ -53,6 +57,7 @@ void hitBall(std::any b) {
     ball->velocity = velh;
     ball->omega = omgh;
     ball->state = Ball::FLIGHT;
+    ball->AddTrailPoint(ball->position);
 }
 
 
@@ -74,8 +79,8 @@ int main() {
     // Define camera {position}, {look at}, {up direction}, FOV
     
     Camera camera = { {0} };
-    camera.position = (Vector3){ -10.0f, 2.0f, 0.0f };
-    camera.target = (Vector3){ 50.0f, 2.0f, 0.0f };
+    camera.position = (Vector3){ -10.0f, 5.0f, 0.0f };
+    camera.target = (Vector3){ 40.0f, 0.0f, 0.0f };
     camera.up = (Vector3){0.0f, 1.0f, 0.0f };
     camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
@@ -154,20 +159,27 @@ int main() {
             char vel_text[50];
             char spin_text[50];
             char dist_text[50];
+            char carry_text[50];
             if (display_units == 0) {
                 sprintf(vel_text, "vel: %8.4f %8.4f %8.4f m/s", ball1.velocity.x, ball1.velocity.y, ball1.velocity.z);
-                sprintf(dist_text, "distance: %d m", (int)ball1.position.x);
+                sprintf(dist_text, "distance: %d m", (int)Vector3Length(ball1.position));
+                sprintf(carry_text, "carry: %d m", (int)ball1.carry);
             }
             else {
                 Vector3 vel_mph = Vector3Scale(ball1.velocity, 2.237);
                 sprintf(vel_text, "vel: %8.4f %8.4f %8.4f mph", vel_mph.x, vel_mph.y, vel_mph.z);
-                sprintf(dist_text, "distance: %d yd", (int)(ball1.position.x * 1.09361));
+                sprintf(dist_text, "distance: %d yd", (int)(Vector3Length(ball1.position) * 1.09361));
+                sprintf(carry_text, "carry: %d yd", (int)(ball1.carry*1.09361));
             }
             sprintf(spin_text, "omg: %8.4f %8.4f %8.4f rad/s", ball1.omega.x, ball1.omega.y, ball1.omega.z);
 
-            DrawText(vel_text, 20, 20, 14, BLACK);
-            DrawText(spin_text, 20, 40, 14, BLACK);
-            DrawText(dist_text, 20, 60, 14, BLACK);
+            DrawText(carry_text, 20, 20, 14, BLACK);
+            DrawText(dist_text, 20, 40, 14, BLACK);
+            if (dynamics_debug) {
+                DrawText(vel_text, 20, 70, 14, BLACK);
+                DrawText(spin_text, 20, 90, 14, BLACK);
+            }
+            
 
             // Draw Buttons
             resetButton.DrawButton();

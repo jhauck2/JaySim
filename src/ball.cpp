@@ -29,11 +29,17 @@ void Ball::DrawBall() {
     Vector3 shadow = this->position;
     shadow.y = radius*3;
     DrawSphere(shadow, radius*3.0f, DARKGRAY);
+    // Draw ball trail
+    this->DrawTrail();
 }
 
 void Ball::UpdateBall(double delta) {
+    // Update the trail
+    if (this->state != REST) this->UpdateTrail(delta);
+
     // Check if ball is onground 
     if (this->position.y < Ball::radius) {
+        if (this->state == FLIGHT) this->SetState(ROLLOUT);
         this->on_ground = true;
         this->position.y = Ball::radius;
         // bounce - for bounce dynamics see References/Golf ball landing bounce and roll on turf
@@ -75,7 +81,46 @@ void Ball::UpdateBall(double delta) {
         if (Vector3Length(this->velocity) < 0.1 && Vector3Length(this->omega) < 1.0f) { // stop rolling
             this->velocity = Vector3Zero();
             this->omega = Vector3Zero();
+            this->SetState(REST);
         }
     }
     else this->on_ground = false;
+}
+
+
+void Ball::SetState(ball_state st) {
+    if (st == ROLLOUT) {
+        this->carry = (int)Vector3Length(this->position);
+    }
+
+    this->state = st;
+}
+
+void Ball::DrawTrail() {
+    if (this->num_trail_points > 1) {
+        for(int i=0; i<num_trail_points-1; i++) {
+            DrawLine3D(trail_points[i], trail_points[i+1], RED);
+        }
+    }
+
+}
+
+void Ball::UpdateTrail(float delta) {
+    this->trail_time_accumulator += delta;
+    if (this->trail_time_accumulator >= trail_resolution) { // Add a point to the trail point array
+        this->AddTrailPoint(this->position);
+        this->trail_time_accumulator = 0.0f;
+    }
+
+}
+
+void Ball::ClearTrail() {
+    this->num_trail_points = 0;
+    this->trail_time_accumulator = 0.0f;
+}
+
+void Ball::AddTrailPoint(Vector3 point) {
+    if (this->num_trail_points >= MAX_TRAIL_POINTS) return; // Don't add more than the maximum number of points
+    this->trail_points[num_trail_points] = point;
+    num_trail_points++;
 }
