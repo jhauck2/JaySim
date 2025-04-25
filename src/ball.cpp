@@ -24,11 +24,11 @@ Vector3 Ball::GetOmega() {
 }
 
 void Ball::DrawBall() {
-    DrawSphere(Vector3Add(this->position, (Vector3){0.0f,radius*10.0f,0.0f}), radius*10.0f, WHITE);
+    DrawSphere(Vector3Add(this->position, (Vector3){0.0f,radius*3.0f,0.0f}), radius*3.0f, WHITE);
     // Draw Shadow on the ground
     Vector3 shadow = this->position;
-    shadow.y = radius*10;
-    DrawSphere(shadow, radius*10.0f, GRAY);
+    shadow.y = radius*3;
+    DrawSphere(shadow, radius*3.0f, DARKGRAY);
 }
 
 void Ball::UpdateBall(double delta) {

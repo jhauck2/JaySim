@@ -5,14 +5,15 @@
 #include "ball.hpp"
 #include "dynamics.hpp"
 #include "button.hpp"
-#include "jayShader.hpp"
 
-#define RLIGHTS_IMPLEMENTATION
-#include "rlights.h"
+//#include "jayShader.hpp"
+
+//#define RLIGHTS_IMPLEMENTATION
+//#include "rlights.h"
 
 #define GLSL_VERSION 330
 
-
+int display_units = 1; // 0 -> Meters, 1 -> Yards/MPH
 
 std::string version = "V0.0.1";
 
@@ -21,9 +22,9 @@ Vector3 pos0 = {0.0f, 0.05f, 0.0f};
 Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
-// 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm
-Vector3 velh = {44.7*cos(20.8*PI/180.0)*cos(1.7*PI/180.0), 44.7*sin(20.8*PI/180.0), 44.7*sin(1.7*PI/180)};
-Vector3 omgh = {0.0f, 0.0f, 784.0f};
+// 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm, 2.7 degree spin axis offset
+Vector3 velh = {44.7f*cos(20.8f*PI/180.0f)*cos(1.7f*PI/180.0f), 44.7f*sin(20.8f*PI/180.0f), 44.7f*sin(1.7*PI/180.0f)};
+Vector3 omgh = {0.0f, 784.0f*sin(2.7*PI/180.0f), 784.0f*cos(2.7*PI/180.0)};
 
 void resetBall(std::any b) {
     Ball *ball;
@@ -36,6 +37,7 @@ void resetBall(std::any b) {
     ball->position = pos0;
     ball->velocity = vel0;
     ball->omega = omg0;
+    ball->state = Ball::REST;
 }
 
 void hitBall(std::any b) {
@@ -49,6 +51,7 @@ void hitBall(std::any b) {
     ball->position = pos0;
     ball->velocity = velh;
     ball->omega = omgh;
+    ball->state = Ball::FLIGHT;
 }
 
 
@@ -69,11 +72,11 @@ int main() {
 
     // Define camera {position}, {look at}, {up direction}, FOV
     
-    Camera camera = { 0 };
-    camera.position = (Vector3){ -30.0f, 20.0f, 0.0f };
-    camera.target = (Vector3){ 50.0f, 0.0f, 0.0f };
+    Camera camera = { {0} };
+    camera.position = (Vector3){ -10.0f, 2.0f, 0.0f };
+    camera.target = (Vector3){ 50.0f, 2.0f, 0.0f };
     camera.up = (Vector3){0.0f, 1.0f, 0.0f };
-    camera.fovy = 60.0f;
+    camera.fovy = 45.0f;
     camera.projection = CAMERA_PERSPECTIVE;
 
     // Create ball
@@ -91,8 +94,6 @@ int main() {
     // Load Shaders
     // ------------------------------------------------------------------------
     // Load PBR shader and setup all required locations
-    Shader shader;
-    initShader(&shader, "Resources/Shaders/pbr.vs", "Resources/Shaders/pbr.fs");
 
 
     // Load in the course
@@ -101,26 +102,8 @@ int main() {
     Model skybox = LoadModel("Resources/Models/Skybox.glb"); // skybox  should be rendered at the camera position
     // Load Range
     Model range = LoadModel("Resources/Models/Range.glb");
-    range.materials[0].shader = shader;
-
-    // Setup materials[0].maps default parameters
-    range.materials[0].maps[MATERIAL_MAP_ALBEDO].color = WHITE;
-    range.materials[0].maps[MATERIAL_MAP_METALNESS].value = 0.5f;
-    range.materials[0].maps[MATERIAL_MAP_ROUGHNESS].value = 0.5f;
-    range.materials[0].maps[MATERIAL_MAP_OCCLUSION].value = 1.0f;
-    range.materials[0].maps[MATERIAL_MAP_EMISSION].color = (Color){ 255, 162, 0, 255 };
-
     Vector3 range_pos = {180.0, 0.0, 0.0};
     range.transform = MatrixRotateXYZ((Vector3){0.0f, PI/2.0f, 0.0f});
-    Model monke = LoadModel("Resources/Models/Monke.glb");
-    Vector3 monke_pos = {0.0f, 1.0f, 2.0f};
-
-    // Create some lights
-    Light lights[MAX_LIGHTS] = { 0 };
-    lights[0] = CreateLight(LIGHT_POINT, (Vector3){ -1.0f, 1.0f, -2.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, YELLOW, 4.0f, shader);
-    lights[1] = CreateLight(LIGHT_POINT, (Vector3){ 2.0f, 1.0f, 1.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, GREEN, 3.3f, shader);
-    lights[2] = CreateLight(LIGHT_POINT, (Vector3){ -2.0f, 1.0f, 1.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, RED, 8.3f, shader);
-    lights[3] = CreateLight(LIGHT_POINT, (Vector3){ 1.0f, 1.0f, -2.0f }, (Vector3){ 0.0f, 0.0f, 0.0f }, BLUE, 2.0f, shader);
 
 
     SetTargetFPS(60);
@@ -132,10 +115,6 @@ int main() {
         float delta = GetFrameTime();
 
         //UpdateCamera(&camera, CAMERA_ORBITAL);
-
-        // Update the shader with the camera view vector (points towards { 0.0f, 0.0f, 0.0f })
-        float cameraPos[3] = {camera.position.x, camera.position.y, camera.position.z};
-        SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
         // Some kind of state machine 
         Dynamics::rk4(&ball1, delta);
@@ -165,25 +144,25 @@ int main() {
 
             BeginMode3D(camera);
 
-                // Set range model texture tiling and emissive color parameters on shader
-                Vector4 rangeEmissiveColor = ColorNormalize(range.materials[0].maps[MATERIAL_MAP_EMISSION].color);
-                SetShaderValue(shader, emissiveColorLoc, &rangeEmissiveColor, SHADER_UNIFORM_VEC4);
-                float emissiveIntensity = 0.01f;
-                SetShaderValue(shader, emissiveIntensityLoc, &emissiveIntensity, SHADER_UNIFORM_FLOAT);
-
                 DrawModel(range, range_pos, 1.0f, WHITE);
-
-                //DrawModel(monke, monke_pos, 1.0f, WHITE);
                 DrawModel(skybox, camera.position, 1.0f, WHITE);
                 ball1.DrawBall();
                 
             EndMode3D();
+
             char vel_text[50];
             char spin_text[50];
             char dist_text[50];
-            sprintf(vel_text, "vel: %8.4f %8.4f %8.4f", ball1.velocity.x, ball1.velocity.y, ball1.velocity.z);
-            sprintf(spin_text, "omg: %8.4f %8.4f %8.4f", ball1.omega.x, ball1.omega.y, ball1.omega.z);
-            sprintf(dist_text, "distance: %d", (int)ball1.position.x);
+            if (display_units == 0) {
+                sprintf(vel_text, "vel: %8.4f %8.4f %8.4f m/s", ball1.velocity.x, ball1.velocity.y, ball1.velocity.z);
+                sprintf(dist_text, "distance: %d m", (int)ball1.position.x);
+            }
+            else {
+                Vector3 vel_mph = Vector3Scale(ball1.velocity, 2.237);
+                sprintf(vel_text, "vel: %8.4f %8.4f %8.4f mph", vel_mph.x, vel_mph.y, vel_mph.z);
+                sprintf(dist_text, "distance: %d yd", (int)(ball1.position.x * 1.09361));
+            }
+            sprintf(spin_text, "omg: %8.4f %8.4f %8.4f rad/s", ball1.omega.x, ball1.omega.y, ball1.omega.z);
 
             DrawText(vel_text, 20, 20, 14, BLACK);
             DrawText(spin_text, 20, 40, 14, BLACK);
@@ -199,12 +178,7 @@ int main() {
 
     // De-Initialization
     // ------------------------------------------------------------------------
-    range.materials[0].shader = (Shader){ 0 };
-    UnloadMaterial(range.materials[0]);
-    range.materials[0].maps = NULL;
     UnloadModel(range);
-    
-    UnloadShader(shader);       // Unload Shader
 
     CloseWindow();
     // ------------------------------------------------------------------------
