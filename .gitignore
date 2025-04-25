@@ -1,3 +1,4 @@
 # Ignore all build files
 build/
 *.kate-swp
+Videos/
