@@ -1,10 +1,11 @@
-#include <stdio.h>
+#include "ball.hpp"
+#include <boost/thread.hpp>
+#include "button.hpp"
+#include "dynamics.hpp"
 #include <iostream>
 #include <raylib.h>
 #include <raymath.h>
-#include "ball.hpp"
-#include "dynamics.hpp"
-#include "button.hpp"
+#include <stdio.h>
 
 //#include "jayShader.hpp"
 
