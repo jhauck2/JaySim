@@ -76,7 +76,7 @@ int main() {
     std::string title = "JaySim - " + version;
 
     InitWindow(screenWidth, screenHeight, title.c_str());
-    //SetWindowMonitor(0);
+    SetWindowMonitor(0);
 
     // Define camera {position}, {look at}, {up direction}, FOV
     
