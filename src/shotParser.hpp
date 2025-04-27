@@ -1,7 +1,7 @@
 #ifndef __SHOT_PARSER__
 #define __SHOT_PARSER__
 
-#include "nlohmann/json.hpp"
+#include <fstream>
 #include <string>
 
 enum t_units {
@@ -43,7 +43,7 @@ typedef struct shot_options {
 } t_shot_options;
 
 typedef struct shot_data {
-    std::string devideID;
+    std::string deviceID;
     t_units units;
     int shotNumber;
     int APIversion;
@@ -51,6 +51,9 @@ typedef struct shot_data {
     t_club_data club_data;
     t_shot_options shot_options;
 } shot_data;
+
+shot_data parse_json_shot_string(std::string shot_string);
+shot_data parse_json_shot_file(std::ifstream file);
 
 
 #endif
