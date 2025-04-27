@@ -46,14 +46,14 @@ typedef struct shot_data {
     std::string deviceID;
     t_units units;
     int shotNumber;
-    int APIversion;
+    std::string APIversion;
     t_ball_data ball_data;
     t_club_data club_data;
     t_shot_options shot_options;
-} shot_data;
+} t_shot_data;
 
-shot_data parse_json_shot_string(std::string shot_string);
-shot_data parse_json_shot_file(std::ifstream file);
+t_shot_data parse_json_shot_string(const std::string& shot_string);
+t_shot_data parse_json_shot_file(const std::string& path);
 
 
 #endif

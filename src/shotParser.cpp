@@ -1,15 +1,19 @@
 #include "shotParser.hpp"
 #include "nlohmann/json.hpp"
+#include <stdio.h>
 
 using json = nlohmann::json;
 
-shot_data parse_json_shot_data(json json_data) {
-    shot_data data = { 0 };
+t_shot_data parse_json_shot_data(json json_data) {
+    t_shot_data data;
 
     data.deviceID = json_data["DeviceID"];
-    std::string units_s = json_data["Units"];
-    if (units_s == "Yards") data.units = YARDS;
-    else data.units = METERS;
+    if (json_data["Units"] != NULL) {
+        std::string units_s = json_data["Units"];
+        if (units_s == "Yards") data.units = YARDS;
+        else data.units = METERS;
+    }
+    else data.units = YARDS;
     data.shotNumber = json_data["ShotNumber"];
     data.APIversion = json_data["APIversion"];
 
@@ -25,13 +29,15 @@ shot_data parse_json_shot_data(json json_data) {
     return data;
 }
 
-shot_data parse_json_shot_string(std::string shot_string) {
+t_shot_data parse_json_shot_string(const std::string& shot_string) {
     json json_data = json::parse(shot_string);
+
 
     return parse_json_shot_data(json_data);
 }
 
-shot_data parse_json_shot_file(std::ifstream file) {
+t_shot_data parse_json_shot_file(const std::string& path) {
+    std::ifstream file(path);
     json json_data = json::parse(file);
 
     return parse_json_shot_data(json_data);

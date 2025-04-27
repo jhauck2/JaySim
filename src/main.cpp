@@ -2,9 +2,11 @@
 #include <boost/thread.hpp>
 #include "button.hpp"
 #include "dynamics.hpp"
+#include <fstream>
 #include <iostream>
 #include <raylib.h>
 #include <raymath.h>
+#include "shotParser.hpp"
 #include <stdio.h>
 
 //#include "jayShader.hpp"
@@ -74,7 +76,7 @@ int main() {
     std::string title = "JaySim - " + version;
 
     InitWindow(screenWidth, screenHeight, title.c_str());
-    SetWindowMonitor(0);
+    //SetWindowMonitor(0);
 
     // Define camera {position}, {look at}, {up direction}, FOV
     
@@ -88,6 +90,12 @@ int main() {
     // Create ball
     Ball ball1;
     resetBall(&ball1);
+
+    // Load shot data from file
+    // This is just a test for now
+    std::string path = "Resources/json/test_shot.json";
+    t_shot_data shot_data = parse_json_shot_file(path);
+
 
     // create buttons
     //Button resetButton((Vector2){20, screenWidth-100}, (Vector2){30, 80}, "Button Test");
