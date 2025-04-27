@@ -1,6 +1,7 @@
 #ifndef __SHOT_PARSER__
 #define __SHOT_PARSER__
 
+#include "nlohmann/json.hpp"
 #include <string>
 
 enum t_units {

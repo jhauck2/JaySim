@@ -26,8 +26,8 @@ Vector3 vel0 = {0.0f, 0.0f, 0.0f};
 Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
 // 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm, 2.7 degree spin axis offset
-Vector3 velh = {44.7f*cos(20.8f*PI/180.0f)*cos(1.7f*PI/180.0f), 44.7f*sin(20.8f*PI/180.0f), 44.7f*sin(1.7*PI/180.0f)};
-Vector3 omgh = {0.0f, 784.0*sin(2.7*PI/180.0), 784.0f*cos(2.7*PI/180.0)};
+Vector3 velh = {44.7f*cos(20.8f*PI/180.0f)*cos(1.7f*PI/180.0f), 44.7f*sin(20.8f*PI/180.0f), 44.7f*(float)sin(1.7*PI/180.0f)};
+Vector3 omgh = {0.0f, 784.0f*(float)sin(2.7*PI/180.0), 784.0f*(float)cos(2.7*PI/180.0)};
 
 void resetBall(std::any b) {
     Ball *ball;
