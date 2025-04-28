@@ -65,7 +65,7 @@ void Ball::UpdateBall(double delta) {
 
             float e = 0.0f;
             if (this->velocity.y < -20.0f) e = 0.120;
-            else e = 0.510f - 0.0375*this->velocity.y + 0.000903*this->velocity.y*this->velocity.y; // Eq 17 from reference
+            else e = 0.510f + 0.0375*this->velocity.y + 0.000903*this->velocity.y*this->velocity.y; // Eq 17 from reference
             this->velocity.y *= -e;
             this->velocity.x *= eh; //0.8f;
             this->velocity.z *= eh; //0.8f;
