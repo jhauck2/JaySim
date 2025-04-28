@@ -22,16 +22,15 @@ bool dynamics_debug = false; // when true, displays velocity and angular velocit
 
 std::string version = "V0.0.1";
 
-// Ball initial conditions
-Vector3 pos0 = {0.0f, 0.05f, 0.0f};
-Vector3 vel0 = {0.0f, 0.0f, 0.0f};
-Vector3 omg0 = {0.0f, 0.0f, 0.0f};
 
-// 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm, 2.7 degree spin axis offset
-Vector3 velh = {44.7f*cos(20.8f*PI/180.0f)*cos(1.7f*PI/180.0f), 44.7f*sin(20.8f*PI/180.0f), 44.7f*(float)sin(1.7*PI/180.0f)};
-Vector3 omgh = {0.0f, 784.0f*(float)sin(2.7*PI/180.0), 784.0f*(float)cos(2.7*PI/180.0)};
-
+// Button Functions
+// ------------------------------------------------------------------------
 void resetBall(std::any b) {
+    // Ball initial conditions
+    Vector3 pos0 = {0.0f, 0.05f, 0.0f};
+    Vector3 vel0 = {0.0f, 0.0f, 0.0f};
+    Vector3 omg0 = {0.0f, 0.0f, 0.0f};
+
     Ball *ball;
     try {
         ball = std::any_cast<Ball*>(b);
@@ -48,6 +47,11 @@ void resetBall(std::any b) {
 }
 
 void hitBall(std::any b) {
+    // 8 iron test shot - 100 mph, 20.8 deg launch, 1.7 deg horz launch, 7494 rpm, 2.7 degree spin axis offset
+    Vector3 pos0 = {0.0f, 0.05f, 0.0f};
+    Vector3 velh = {44.7f*cos(20.8f*PI/180.0f)*cos(1.7f*PI/180.0f), 44.7f*sin(20.8f*PI/180.0f), 44.7f*(float)sin(1.7*PI/180.0f)};
+    Vector3 omgh = {0.0f, 784.0f*(float)sin(2.7*PI/180.0), 784.0f*(float)cos(2.7*PI/180.0)};
+
     Ball *ball;
     try {
         ball = std::any_cast<Ball*>(b);
@@ -63,6 +67,8 @@ void hitBall(std::any b) {
 }
 
 void hitBallJson(std::any b) {
+    Vector3 pos0 = {0.0f, 0.05f, 0.0f};
+
     Ball *ball;
     try {
         ball = std::any_cast<Ball*>(b);
@@ -88,7 +94,8 @@ void hitBallJson(std::any b) {
     ball->AddTrailPoint(ball->position);
 }
 
-
+// Main
+// ------------------------------------------------------------------------
 int main() {
 
     // Initialization
