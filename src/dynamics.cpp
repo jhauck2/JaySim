@@ -68,15 +68,13 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
         // Magnus Force
         F_m = Vector3CrossProduct(om, vel);
         F_m = Vector3Scale(F_m, S);
-        // Viscous torque - factor of 480 used to get correct decay rate
         // Reference 3D Golf Ball Simulation pdf
         float Cdm = Cd / 3.0f;
         T_d = Vector3Normalize(om);
         T_d = Vector3Scale(T_d, -0.5f*Cdm*Dynamics::rho*Ball::A);
-        //T_d = Vector3Scale(om, S*480.0f*Dynamics::nu);
         // Drag
-        F_d = Vector3Multiply(vel, vel);
-        F_d = Vector3Scale(F_d, Cd*Dynamics::rho*Ball::A/2.0f);
+        F_d = Vector3Scale(vel, Vector3Length(vel));
+        F_d = Vector3Scale(F_d, Cd*Dynamics::rho*Ball::A/2.0f*1.1); // *1.1 factor used to dial in distances
     }
 
     Vector3 F = Vector3Subtract(F_g, F_d); // Total forces
