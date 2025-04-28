@@ -62,6 +62,32 @@ void hitBall(std::any b) {
     ball->AddTrailPoint(ball->position);
 }
 
+void hitBallJson(std::any b) {
+    Ball *ball;
+    try {
+        ball = std::any_cast<Ball*>(b);
+    }
+    catch (const std::bad_any_cast& e) {
+        std::cout << "2) " << e.what() << '\n';
+    }
+
+    // Load shot data from file
+    // This is just a test for now
+    std::string path = "Resources/json/test_shot.json";
+    t_shot_data shot_data = parse_json_shot_file(path);
+    ball->position = pos0;
+    ball->velocity = (Vector3){shot_data.ball_data.speed, 0.0f, 0.0f};
+    ball->velocity = Vector3RotateByAxisAngle(ball->velocity, (Vector3){0.0f, 0.0f, 1.0f}, shot_data.ball_data.VLA*PI/180.0);
+    ball->velocity = Vector3RotateByAxisAngle(ball->velocity, (Vector3){0.0f, 1.0f, 0.0f}, shot_data.ball_data.HLA*PI/180.0);
+    ball->velocity = Vector3Scale(ball->velocity, 0.44704); // convert to m/s
+    ball->omega = (Vector3){0.0f, 0.0f, shot_data.ball_data.totalSpin};
+    ball->omega = Vector3RotateByAxisAngle(ball->omega, (Vector3){1.0f, 0.0f, 0.0f}, -shot_data.ball_data.spinAxis*PI/180.0);
+    ball->omega = Vector3Scale(ball->omega, 0.10472); // convert to rad/s
+
+    ball->state = Ball::FLIGHT;
+    ball->AddTrailPoint(ball->position);
+}
+
 
 int main() {
 
@@ -91,11 +117,7 @@ int main() {
     Ball ball1;
     resetBall(&ball1);
 
-    // Load shot data from file
-    // This is just a test for now
-    std::string path = "Resources/json/test_shot.json";
-    t_shot_data shot_data = parse_json_shot_file(path);
-
+    
 
     // create buttons
     //Button resetButton((Vector2){20, screenWidth-100}, (Vector2){30, 80}, "Button Test");
@@ -104,6 +126,9 @@ int main() {
     
     Button hitButton((Vector2){screenWidth-120, 70}, (Vector2){100, 30}, "Hit Ball");
     hitButton.callback = hitBall;
+    
+    Button hitJsonButton((Vector2){screenWidth-120, 120}, (Vector2){100, 30}, "Hit Json");
+    hitJsonButton.callback = hitBallJson;
 
     // Load Shaders
     // ------------------------------------------------------------------------
@@ -147,6 +172,11 @@ int main() {
             if (CheckCollisionPointRec(mouse_pos, (Rectangle){hitButton.position.x, hitButton.position.y, hitButton.size.x, hitButton.size.y})) {
                 hitButton.Click();
                 (*(hitButton.callback))(&ball1);
+            }
+            // Hit Json Button
+            if (CheckCollisionPointRec(mouse_pos, (Rectangle){hitJsonButton.position.x, hitJsonButton.position.y, hitJsonButton.size.x, hitJsonButton.size.y})) {
+                hitJsonButton.Click();
+                (*(hitJsonButton.callback))(&ball1);
             }
         }
         
@@ -192,6 +222,7 @@ int main() {
             // Draw Buttons
             resetButton.DrawButton();
             hitButton.DrawButton();
+            hitJsonButton.DrawButton();
 
         EndDrawing();
         // -------------------------------------------------------------------
