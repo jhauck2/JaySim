@@ -3,14 +3,14 @@ C++ Golf Sim built using RayLib
 ## Build Instructions
 ### Linux
 #### Install Dependencies
-GCC
+##### GCC
 - Follow the appropriate installation instructions for your distro.
 - Currently using gcc version 15.0.1-0
-Make
+##### Make
 - Follow the appropriate installation instructions for your distro.
 - Currently using GNU Make 4.4.1
-Raylib 
-- follow the instructions on the Raylib GitHub page.
+##### Raylib 
+- Follow the instructions on the Raylib GitHub page.
 - Make sure to install the built files so that they are findable by the pre-processor/linker using `make install` or other variation.
 #### Clone Repository
 - Clone repository into a local folder
