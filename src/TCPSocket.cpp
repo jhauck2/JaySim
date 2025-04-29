@@ -1,4 +1,5 @@
 #include "TCPSocket.hpp"
+#include "shotData.hpp"
 #include "shotParser.hpp"
 #include <cstring>
 #include <sys/socket.h>
@@ -49,68 +50,73 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             // unlock mutex for should close
             close_mtx->unlock();
             close(socketfd);
-            return;
+            break;
         }
         close_mtx->unlock();
 
         // Accept incoming connections
         // Non-blocking accept call
-        newsocket = accept(socketfd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addrlen);
+        this->newsocket = -1;
+        this->newsocket = accept(socketfd, (struct sockaddr *)&client_addr, (socklen_t *)&client_addrlen);
 
-        if (newsocket < 0) {
-            // no new connections
+        if (this->newsocket < 0) {
+            continue; // no connection detected
         }
         else {
             printf("Connection accepted\n");
-            break;
         }
 
-        
-    }
+        printf("Waiting for data to be read from connection\n");
 
-    // Get the client address
-    int sockn = getsockname(newsocket, (struct sockaddr *)&client_addr, (socklen_t *)&client_addrlen);
+        // loop forever, waiting to read from socket
+        while(1) {
+            // lock mutex for should close
+            close_mtx->lock();
+            if (*should_close) break;
+            // unlock mutex for should close
+            close_mtx->unlock();
 
-    if (sockn < 0) {
-        perror("webserver (getsockname)");
-        close(socketfd);
-        return;
-    }
+            // Read from the socket
+            int valread = read(this->newsocket, this->json_data, BUFFER_SIZE);
+            if (valread < 0) {
+                printf("Nothing to read right now\n");
+                continue;
+            }
+            else break;
+        }
+        printf("Data read from socket\n");
 
-    // loop forever, listening for connections
-    while(1) {
-        // lock mutex for should close
-        close_mtx->lock();
-        if (*should_close) break;
-        // unlock mutex for should close
-        close_mtx->unlock();
-
-        // Read from the socket
-        int valread = read(newsocket, json_data, BUFFER_SIZE);
-        if (valread < 0) {
-            perror("webserver (read)");
+        // Parse json_data into shot_data
+        std::string shot_string = this->json_data;
+        t_shot_data shot_data;
+        try {
+            shot_data = parse_json_shot_string(shot_string);
+        }
+        catch (...) {
+            printf("No valid json data to read");
             continue;
         }
 
-        // Parse json_data into shot_data
-        std::string shot_string = json_data;
-        t_shot_data shot_data = parse_json_shot_string(shot_string);
+        // set json_data to empty to stop re-shooting
+        this->json_data[0] = '\0';
+
 
         if (ball_mtx->try_lock()) { // try to get the lock
-            if (shot_data.shot_options.containsBallData && ball_data->status == STALE) {
-                *ball_data = shot_data.ball_data;
-                ball_data->status = VALID;
+            if (shot_data.shot_options.containsBallData) {
+                if (ball_data->status == STALE) {
+                    *ball_data = shot_data.ball_data;
+                    ball_data->status = VALID;
+                    printf("Ball data written\n");
+                }
             }
             ball_mtx->unlock();
+        } 
+        else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
 
-            // Write to the socket
-            int valwrite = write(newsocket, resp, strlen(resp));
-            if (valwrite < 0 ) {
-                perror("webserver (write");
-                continue;
-            }
-        } // Otherwise, the main thread is still consuming ball data. Ignore shot
+        close(this->newsocket);
     }
-    close(newsocket);
-    close(socketfd);
+
+    
+    close(this->socketfd);
+    return;
 }

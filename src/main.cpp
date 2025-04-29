@@ -177,6 +177,7 @@ int main() {
     TCPSocket socket;
     socket.init_socket();
     t_ball_data ball_data; // ball data to be shared between main thread and socket thread
+    ball_data.status = STALE;
     bool close_socket = false; // how we tell the socket to close
     //provide mutexes for ball data and socket close indicator
     std::mutex ball_data_mtx;
@@ -220,14 +221,18 @@ int main() {
             }
         }
 
+         
+
         // Handle shot from TCPSocket
         if (ball_data_mtx.try_lock()){
-            if (ball_data.status == VALID) {
+            if (ball_data.status == VALID and ball1.state == Ball::REST) {
+                printf("Valid ball data recieved from socket\n");
                 hitFromBallData(&ball1, &ball_data);
                 ball_data.status = STALE;
             }
             ball_data_mtx.unlock();
         } // Otherwise, the socket still has a lock on the ball data
+        
         
         // Draw
         // -------------------------------------------------------------------
