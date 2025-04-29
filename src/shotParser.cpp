@@ -1,4 +1,5 @@
 #include "shotParser.hpp"
+#include <fstream>
 #include "nlohmann/json.hpp"
 #include <stdio.h>
 

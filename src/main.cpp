@@ -2,12 +2,15 @@
 #include <boost/thread.hpp>
 #include "button.hpp"
 #include "dynamics.hpp"
-#include <fstream>
 #include <iostream>
+#include <mutex>
 #include <raylib.h>
 #include <raymath.h>
+#include "shotData.hpp"
 #include "shotParser.hpp"
 #include <stdio.h>
+#include <thread>
+#include "TCPSocket.hpp"
 
 //#include "jayShader.hpp"
 
@@ -62,6 +65,8 @@ void hitBall(std::any b) {
     ball->position = pos0;
     ball->velocity = velh;
     ball->omega = omgh;
+    ball->carry = 0.0;
+    ball->ClearTrail();
     ball->state = Ball::FLIGHT;
     ball->AddTrailPoint(ball->position);
 }
@@ -90,6 +95,26 @@ void hitBallJson(std::any b) {
     ball->omega = Vector3RotateByAxisAngle(ball->omega, (Vector3){1.0f, 0.0f, 0.0f}, -shot_data.ball_data.spinAxis*PI/180.0);
     ball->omega = Vector3Scale(ball->omega, 0.10472); // convert to rad/s
 
+    ball->state = Ball::FLIGHT;
+    ball->carry = 0.0;
+    ball->ClearTrail();
+    ball->AddTrailPoint(ball->position);
+}
+
+void hitFromBallData(Ball *ball, t_ball_data *ball_data) {
+    Vector3 pos0 = {0.0f, 0.05f, 0.0f};
+
+    ball->position = pos0;
+    ball->velocity = (Vector3){ball_data->speed, 0.0f, 0.0f};
+    ball->velocity = Vector3RotateByAxisAngle(ball->velocity, (Vector3){0.0f, 0.0f, 1.0f}, ball_data->VLA*PI/180.0);
+    ball->velocity = Vector3RotateByAxisAngle(ball->velocity, (Vector3){0.0f, 1.0f, 0.0f}, ball_data->HLA*PI/180.0);
+    ball->velocity = Vector3Scale(ball->velocity, 0.44704); // convert to m/s
+    ball->omega = (Vector3){0.0f, 0.0f, ball_data->totalSpin};
+    ball->omega = Vector3RotateByAxisAngle(ball->omega, (Vector3){1.0f, 0.0f, 0.0f}, -ball_data->spinAxis*PI/180.0);
+    ball->omega = Vector3Scale(ball->omega, 0.10472); // convert to rad/s
+
+    ball->carry = 0.0;
+    ball->ClearTrail();
     ball->state = Ball::FLIGHT;
     ball->AddTrailPoint(ball->position);
 }
@@ -124,8 +149,6 @@ int main() {
     Ball ball1;
     resetBall(&ball1);
 
-    
-
     // create buttons
     //Button resetButton((Vector2){20, screenWidth-100}, (Vector2){30, 80}, "Button Test");
     Button resetButton((Vector2){screenWidth-120, 20}, (Vector2){100, 30}, "Reset Ball");
@@ -139,8 +162,7 @@ int main() {
 
     // Load Shaders
     // ------------------------------------------------------------------------
-    // Load PBR shader and setup all required locations
-
+    // Not yet implemented
 
     // Load in the course
     // ------------------------------------------------------------------------
@@ -150,6 +172,17 @@ int main() {
     Model range = LoadModel("Resources/Models/Range.glb");
     Vector3 range_pos = {180.0, 0.0, 0.0};
     range.transform = MatrixRotateXYZ((Vector3){0.0f, PI/2.0f, 0.0f});
+
+    // Set up TCP Socket
+    TCPSocket socket;
+    socket.init_socket();
+    t_ball_data ball_data; // ball data to be shared between main thread and socket thread
+    bool close_socket = false; // how we tell the socket to close
+    //provide mutexes for ball data and socket close indicator
+    std::mutex ball_data_mtx;
+    std::mutex close_socket_mtx;
+    // run this as a thread
+    std::thread socket_thread(&TCPSocket::run_socket, &socket, &ball_data, &close_socket, &ball_data_mtx, &close_socket_mtx);
 
 
     SetTargetFPS(60);
@@ -170,7 +203,7 @@ int main() {
         // Handle button clicks
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
-            // Reset Button
+            // Reset Button - TODO: move this to a button checkClick() function
             if (CheckCollisionPointRec(mouse_pos, (Rectangle){resetButton.position.x, resetButton.position.y, resetButton.size.x, resetButton.size.y})) {
                 resetButton.Click();
                 (*(resetButton.callback))(&ball1);
@@ -186,6 +219,15 @@ int main() {
                 (*(hitJsonButton.callback))(&ball1);
             }
         }
+
+        // Handle shot from TCPSocket
+        if (ball_data_mtx.try_lock()){
+            if (ball_data.status == VALID) {
+                hitFromBallData(&ball1, &ball_data);
+                ball_data.status = STALE;
+            }
+            ball_data_mtx.unlock();
+        } // Otherwise, the socket still has a lock on the ball data
         
         // Draw
         // -------------------------------------------------------------------
@@ -237,6 +279,16 @@ int main() {
 
     // De-Initialization
     // ------------------------------------------------------------------------
+    // Tell the socket thread to close
+    printf("Telling the socket thread to close\n");
+    close_socket_mtx.lock();
+        close_socket = true;
+    close_socket_mtx.unlock();
+
+    // join the socket thread
+    socket_thread.join();
+    printf("Socket thread has closed\n");
+
     UnloadModel(range);
 
     CloseWindow();
