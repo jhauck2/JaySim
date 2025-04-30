@@ -39,7 +39,7 @@ int TCPSocket::init_socket() {
 }
 
 void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mutex *ball_mtx, std::mutex *close_mtx) {
-    char resp[BUFFER_SIZE] = { 0 };
+    char *resp = nullptr;
     printf("Waiting for incoming connections\n");
 
     // Get incoming connections
@@ -66,8 +66,6 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             printf("Connection accepted\n");
         }
 
-        printf("Waiting for data to be read from connection\n");
-
         // loop forever, waiting to read from socket
         while(1) {
             // lock mutex for should close
@@ -91,28 +89,44 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         t_shot_data shot_data;
         try {
             shot_data = parse_json_shot_string(shot_string);
+            shot_data.ball_data.status = VALID;
         }
         catch (...) {
             printf("No valid json data to read");
-            continue;
+            shot_data.ball_data.status = INVALID;
+            // set response to failure
+            resp = (char*)malloc((strlen(resp_501)+1)*sizeof(char));
+            strncpy(resp, resp_501, strlen(resp_501)+1);
         }
+        printf("Valid json parsed from data\n");
 
         // set json_data to empty to stop re-shooting
         this->json_data[0] = '\0';
 
 
         if (ball_mtx->try_lock()) { // try to get the lock
-            if (shot_data.shot_options.containsBallData) {
+            printf("Able to get lock on ball data\n");
+            if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
                 if (ball_data->status == STALE) {
                     *ball_data = shot_data.ball_data;
                     ball_data->status = VALID;
                     printf("Ball data written\n");
+                    // set response to success
+                    resp = (char*)malloc((strlen(resp_200)+1)*sizeof(char));
+                    strncpy(resp, resp_200, strlen(resp_200)+1);
                 }
             }
             ball_mtx->unlock();
         } 
         else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
 
+        // Send response
+        if (resp != nullptr) {
+            int valsend = send(newsocket, resp, strlen(resp)+1, 0);
+        }
+
+        free(resp);
+        resp = nullptr;
         close(this->newsocket);
     }
 

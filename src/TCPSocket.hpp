@@ -15,6 +15,14 @@ class TCPSocket {
     int socketfd, newsocket;
     struct sockaddr_in address, client_addr;
     int addrlen, client_addrlen;
+    static constexpr char resp_501[] = "{\n    \"Code\": 501,\n    \"Message\": \"Malformed json data\"\n}";
+    static constexpr char resp_200[] = "{\n    \"Code\": 200,\n    \"Message\": \"Shot recieved successfully\"\n}";
+    static constexpr char resp_201[] = "{\n    \"Code\": 201,\n"
+                                        "    \"Message\": \"Player Information\",\n"
+                                        "    \"Player\": {\n"
+                                        "        \"Handed\": \"RH\",\n"
+                                        "        \"Club\": \"DR\"\n"
+                                        "    }\n}";
 
 public:
     int init_socket();
