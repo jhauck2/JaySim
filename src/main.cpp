@@ -225,10 +225,13 @@ int main() {
 
         // Handle shot from TCPSocket
         if (ball_data_mtx.try_lock()){
-            if (ball_data.status == VALID and ball1.state == Ball::REST) {
-                printf("Valid ball data recieved from socket\n");
-                hitFromBallData(&ball1, &ball_data);
-                ball_data.status = STALE;
+            if (ball1.state == Ball::REST){
+                if (ball_data.status == INUSE) ball_data.status = STALE;
+                else if (ball_data.status == VALID) {
+                    printf("Valid ball data recieved from socket\n");
+                    hitFromBallData(&ball1, &ball_data);
+                    ball_data.status = INUSE;
+                }
             }
             ball_data_mtx.unlock();
         } // Otherwise, the socket still has a lock on the ball data

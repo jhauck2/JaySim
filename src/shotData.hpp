@@ -11,7 +11,8 @@ enum t_units {
 enum t_status {
     VALID = 0,
     INVALID,
-    STALE
+    STALE,
+    INUSE
 };
 
 typedef struct ball_data {
