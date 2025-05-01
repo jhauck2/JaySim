@@ -1,5 +1,7 @@
 # JaySim
-C++ Golf Sim built using RayLib
+C++ Golf Sim built using RayLib  
+* WARNING * - This is software is pre-pre-pre-alpha. You should expect it to break and be buggy.
+That is all.  
 ## Build Instructions
 ### Linux
 #### Install Dependencies
@@ -28,3 +30,7 @@ C++ Golf Sim built using RayLib
 - All *.o files and the executable should be located in the build directory.
 #### Run
 - `make run` or `./build/jSim` to run the program
+- Note: JaySim uses port 49152 for connection with a LM. If you need to change this port for any reason you can change the value in the file `TCPSocket.hpp` and rebuild with `make` or `make run`
+  
+### Windows  
+- JaySim does not currently build on Windows and 
