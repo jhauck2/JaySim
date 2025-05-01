@@ -12,7 +12,7 @@ That is all.
 - Follow the appropriate installation instructions for your distro.
 - Currently using GNU Make 4.4.1
 ##### Raylib 
-- Follow the instructions on the Raylib GitHub page.
+- Follow the instructions on the Raylib GitHub page: https://github.com/raysan5/raylib
 - Make sure to install the built files so that they are findable by the pre-processor/linker using `make install` or other variation.
 #### Clone Repository
 - Clone repository into a local folder
