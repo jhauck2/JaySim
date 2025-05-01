@@ -66,68 +66,95 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             printf("Connection accepted\n");
         }
 
-        // loop forever, waiting to read from socket
-        while(1) {
+        // We have a connection, keep reading from the same connection unti it closes
+        while (1) {
             // lock mutex for should close
             close_mtx->lock();
-            if (*should_close) break;
-            // unlock mutex for should close
+            if (*should_close) {
+                // unlock mutex for should close
+                close_mtx->unlock();
+                close(socketfd);
+                break;
+            }
             close_mtx->unlock();
 
-            // Read from the socket
-            int valread = read(this->newsocket, this->json_data, BUFFER_SIZE);
-            if (valread < 0) {
-                printf("Nothing to read right now\n");
+            // Need a way to detect closed client socket
+            bool disconnected = false;
+
+            printf("Waiting to read from connected client\n");
+            // Keep trying to read from connection until we get something
+            while(1) {
+                // lock mutex for should close
+                close_mtx->lock();
+                if (*should_close) {
+                    // unlock mutex for should close
+                    close_mtx->unlock();
+                    close(socketfd);
+                    break;
+                }
+                close_mtx->unlock();
+
+                
+
+                // Read from the socket
+                int valread = recv(this->newsocket, this->json_data, BUFFER_SIZE,0);
+                if (valread < 0) {
+                    // nothing to read
+                    continue;
+                }
+                else if (valread == 0) {
+                    printf("Connection broken\n");
+                    disconnected = true;
+                    break;
+                }
+                else break; // data read, lets parse it
+            }
+            if (disconnected) break;
+            printf("Data read from socket\n");
+
+            // Parse json_data into shot_data
+            std::string shot_string = this->json_data;
+            t_shot_data shot_data;
+            try {
+                shot_data = parse_json_shot_string(shot_string);
+                shot_data.ball_data.status = VALID;
+            }
+            catch (...) {
+                printf("No valid json data to read\n");
+                shot_data.ball_data.status = INVALID;
+                // respond with failure
+                int valsend = send(newsocket, resp_501, strlen(resp_501)+1, MSG_NOSIGNAL);
+                if (valsend < 0) { // Likely the socket is closed
+                    break; // break and start accepting new connections
+                }
                 continue;
             }
-            else break;
-        }
-        printf("Data read from socket\n");
+            printf("Valid json parsed from data\n");
 
-        // Parse json_data into shot_data
-        std::string shot_string = this->json_data;
-        t_shot_data shot_data;
-        try {
-            shot_data = parse_json_shot_string(shot_string);
-            shot_data.ball_data.status = VALID;
-        }
-        catch (...) {
-            printf("No valid json data to read");
-            shot_data.ball_data.status = INVALID;
-            // set response to failure
-            resp = (char*)malloc((strlen(resp_501)+1)*sizeof(char));
-            strncpy(resp, resp_501, strlen(resp_501)+1);
-        }
-        printf("Valid json parsed from data\n");
-
-        // set json_data to empty to stop re-shooting
-        this->json_data[0] = '\0';
+            // set json_data to empty to stop re-shooting
+            this->json_data[0] = '\0';
 
 
-        if (ball_mtx->try_lock()) { // try to get the lock
-            printf("Able to get lock on ball data\n");
-            if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
-                if (ball_data->status == STALE) {
-                    *ball_data = shot_data.ball_data;
-                    ball_data->status = VALID;
-                    printf("Ball data written\n");
-                    // set response to success
-                    resp = (char*)malloc((strlen(resp_200)+1)*sizeof(char));
-                    strncpy(resp, resp_200, strlen(resp_200)+1);
+            if (ball_mtx->try_lock()) { // try to get the lock
+                printf("Able to get lock on ball data\n");
+                if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
+                    if (ball_data->status == STALE) {
+                        *ball_data = shot_data.ball_data;
+                        ball_data->status = VALID;
+                        printf("Ball data written\n");
+                        // set response to success
+                        int valsend = send(newsocket, resp_200, strlen(resp_200)+1, MSG_NOSIGNAL);
+                        if (valsend < 0) { // Likely the socket is closed
+                            break; // break and start accepting new connections
+                        }
+                    }
                 }
-            }
-            ball_mtx->unlock();
-        } 
-        else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
-
-        // Send response
-        if (resp != nullptr) {
-            int valsend = send(newsocket, resp, strlen(resp)+1, 0);
+                ball_mtx->unlock();
+            } 
+            else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
         }
 
-        free(resp);
-        resp = nullptr;
-        close(this->newsocket);
+        //close(this->newsocket);
     }
 
     
