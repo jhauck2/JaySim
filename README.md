@@ -1,6 +1,6 @@
 # JaySim
 C++ Golf Sim built using RayLib  
-* WARNING * - This is software is pre-pre-pre-alpha. You should expect it to break and be buggy.
+***WARNING*** - This is software is pre-pre-pre-alpha. You should expect it to break and be buggy.
 That is all.  
 ## Build Instructions
 ### Linux
