@@ -26,6 +26,7 @@ That is all.
 - Copy/move this file into the src/nlohmann folder
 #### Build
 - Navigate to the root directory. `cd ..` (or `cd ../..` if currently in the nlohmann folder).
+- Create the build directory: `mkdir build`
 - Run `make` to compile the program
 - All *.o files and the executable should be located in the build directory.
 #### Run
