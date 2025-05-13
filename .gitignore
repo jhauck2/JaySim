@@ -3,3 +3,4 @@ build/
 *.kate-swp
 Videos/
 src/nlohmann/
+Resources/SocketTest/SocketTest
