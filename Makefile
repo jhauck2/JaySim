@@ -8,16 +8,18 @@ ifeq ($(PLATFORM), PLATFORM_LINUX)
 INC := -I ./src
 LDFLAGS := -L /usr/local/lib64
 LDLIBS := -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+EXEC := jSim
 endif
 
 ifeq ($(PLATFORM), PLATFORM_WINDOWS)
 INC := -I ./src -I C:/raylib-master/src
 LDFLAGS := -L C:/raylib-master/src 
 LDLIBS := -lraylib -lgdi32 -lwinmm -lws2_32
+EXEC := jSim.exe
 endif
 
-build/jSim.exe: $(deps)
-	g++ -D$(PLATFORM) $(WARN) -g $(INC) $(LDFLAGS) src/main.cpp -o build/jSim.exe $(OUTS) $(LDLIBS)
+build/$(EXEC): $(deps)
+	g++ -D$(PLATFORM) $(WARN) -g $(INC) $(LDFLAGS) src/main.cpp -o build/$(EXEC) $(OUTS) $(LDLIBS)
 
 build/ball.o: src/ball.hpp src/ball.cpp
 	g++ -D$(PLATFORM) $(WARN) -g -c src/ball.cpp $(INC) -o build/ball.o
@@ -35,8 +37,8 @@ build/TCPSocket.o: src/TCPSocket.hpp src/TCPSocket.cpp build/shotParser.o
 	g++ -D$(PLATFORM) $(WARN) -g -c src/TCPSocket.cpp $(INC) -o build/TCPSocket.o
 
 
-run: build/jSim
-	./build/jSim
+run: build/$(EXEC)
+	./build/$(EXEC)
 
 clean:
 	rm -I build/*
