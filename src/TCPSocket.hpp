@@ -1,20 +1,37 @@
 #ifndef _TCPSOCKET_H_
 #define _TCPSOCKET_H_
-
 #include <mutex>
+
+#ifdef PLATFORM_LINUX
 #include <netinet/in.h>
-#include "shotData.hpp"
 #include <sys/socket.h>
 #include <unistd.h>
+#endif
+
+#ifdef PLATFORM_WINDOWS
+#define NODRAWTEXT
+#define NOGDI 
+#define NOUSER
+// Type required before windows.h inclusion
+typedef struct tagMSG *LPMSG;
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
+#include "shotData.hpp"
 
 #define PORT 49152
 #define BUFFER_SIZE 1024
 
 class TCPSocket {
     char json_data[BUFFER_SIZE];
+    struct sockaddr_in address;
+    struct sockaddr_in client_addr;
+
     int socketfd, newsocket;
-    struct sockaddr_in address, client_addr;
     int addrlen, client_addrlen;
+
+
     static constexpr char resp_501[] = "{\n    \"Code\": 501,\n    \"Message\": \"Malformed json data\"\n}";
     static constexpr char resp_200[] = "{\n    \"Code\": 200,\n    \"Message\": \"Shot recieved successfully\"\n}";
     static constexpr char resp_201[] = "{\n    \"Code\": 201,\n"

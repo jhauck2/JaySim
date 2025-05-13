@@ -1,16 +1,24 @@
 #include "ball.hpp"
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include "button.hpp"
 #include "dynamics.hpp"
 #include <iostream>
 #include <mutex>
-#include <raylib.h>
-#include <raymath.h>
 #include "shotData.hpp"
 #include "shotParser.hpp"
 #include <stdio.h>
 #include <thread>
 #include "TCPSocket.hpp"
+
+#ifdef PLATFORM_LINUX
+#include <raylib.h>
+#include <raymath.h>
+#endif
+
+#ifdef PLATFORM_WINDOWS
+#include "raylib.h"
+#include "raymath.h"
+#endif
 
 //#include "jayShader.hpp"
 

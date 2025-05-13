@@ -2,9 +2,13 @@
 #include "shotData.hpp"
 #include "shotParser.hpp"
 #include <cstring>
-#include <sys/socket.h>
+
 
 int TCPSocket::init_socket() {
+    // Linux Implementation
+    // -----------------------------------------------------------------------
+
+    #ifdef PLATFORM_LINUX
 
 	// Create a socket file descriptor and make it non blocking
 	socketfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
@@ -36,10 +40,73 @@ int TCPSocket::init_socket() {
     }
 
     return 0;
+    #endif
+    // End Linux implementation
+
+    // Windows Implementation
+    // ----------------------------------------------------------------------
+    #ifdef PLATFORM_WINDOWS
+
+    int result;
+    WSADATA wsaData; // gets populated w/ info explaining this sockets implementation
+    // load Winsock 2.0 DLL. initiates use of the Winsock DLL by a process
+    if ((result = WSAStartup(MAKEWORD(2, 2), &wsaData)) != 0)
+    {
+        printf("WSAStartup() error %d\n", result);
+        return result;
+    }
+
+    //atexit(finalWSACleanup); // add callback to trigger when program ends. cleans up sockets
+    // create the main socket, either client or server
+    socketfd = (int)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    if ((SOCKET)socketfd == INVALID_SOCKET)
+    {
+        printf("socket() error %d\n", WSAGetLastError());
+        return EXIT_FAILURE;
+    }
+    // 1 to set non-blocking, 0 to set re-usable
+    unsigned long argp = 1;
+    // for complete info on this method, check out http://msdn.microsoft.com/en-us/library/ms740476(VS.85).aspx
+    result = setsockopt((SOCKET)socketfd, SOL_SOCKET, SO_REUSEADDR, (char*)&argp, sizeof(argp));
+
+    if (result != 0) {
+        printf("setsockopt() error %d\n", result);
+        return result;
+    }
+    // 1 to set non-blocking, 0 to set blocking
+    argp = 1;
+    // attempt to setup the socket as non-blocking
+    if (ioctlsocket((SOCKET)socketfd, FIONBIO, &argp) == SOCKET_ERROR) {
+        printf("ioctlsocket() error %d\n", WSAGetLastError());
+        return EXIT_FAILURE;
+    }
+
+    // start listening on the server
+    result = bind((SOCKET)socketfd, (sockaddr *)(&address), sizeof(address));
+    if (result == SOCKET_ERROR)
+    {
+        printf("bind() error %d\n", WSAGetLastError());
+        return EXIT_FAILURE;
+    }
+    result = listen((SOCKET)socketfd, /* size of connection queue */10);
+    if (result == SOCKET_ERROR)
+    {
+        printf("listen() error %d\n", WSAGetLastError());
+        return EXIT_FAILURE;
+    }
+
+    return 0;
+
+    #endif
+    // End Windows implementation
 }
 
 void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mutex *ball_mtx, std::mutex *close_mtx) {
-    char *resp = nullptr;
+    // Linux Implementation
+    // -----------------------------------------------------------------------
+
+    #ifdef PLATFORM_LINUX
     printf("Waiting for incoming connections\n");
 
     // Get incoming connections
@@ -153,11 +220,18 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             } 
             else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
         }
-
-        //close(this->newsocket);
     }
 
     
     close(this->socketfd);
     return;
+    #endif
+    // End Linux implementation
+
+    // Windows Implementation
+    // ----------------------------------------------------------------------
+    #ifdef PLATFORM_WINDOWS
+
+    #endif
+    // End Windows Implementation
 }

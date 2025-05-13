@@ -1,7 +1,14 @@
 #ifndef __BALL_H__
 #define __BALL_H__
 
+#ifdef PLATFORM_LINUX
 #include <raylib.h>
+#endif
+
+#ifdef PLATFORM_WINDOWS
+#include "raylib.h"
+#include "raymath.h"
+#endif
 
 #define MAX_TRAIL_POINTS 100
 
