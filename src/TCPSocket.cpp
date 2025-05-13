@@ -231,6 +231,124 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
     // Windows Implementation
     // ----------------------------------------------------------------------
     #ifdef PLATFORM_WINDOWS
+    printf("Waiting for incoming connections\n");
+
+    // Get incoming connections
+    while (1) {
+        // lock mutex for should close
+        close_mtx->lock();
+        if (*should_close) {
+            // unlock mutex for should close
+            close_mtx->unlock();
+            closesocket((SOCKET)socketfd);
+            break;
+        }
+        close_mtx->unlock();
+
+        // Accept incoming connections
+        // Non-blocking accept call
+        newsocket = -1;
+        newsocket = (int)accept((SOCKET)socketfd, (struct sockaddr *)&client_addr, &client_addrlen);
+
+        if (newsocket < 0) {
+            continue; // no connection detected
+        }
+        else {
+            printf("Connection accepted\n");
+        }
+
+        // We have a connection, keep reading from the same connection unti it closes
+        while (1) {
+            // lock mutex for should close
+            close_mtx->lock();
+            if (*should_close) {
+                // unlock mutex for should close
+                close_mtx->unlock();
+                closesocket((SOCKET)socketfd);
+                break;
+            }
+            close_mtx->unlock();
+
+            // Need a way to detect closed client socket
+            bool disconnected = false;
+
+            printf("Waiting to read from connected client\n");
+            // Keep trying to read from connection until we get something
+            while(1) {
+                // lock mutex for should close
+                close_mtx->lock();
+                if (*should_close) {
+                    // unlock mutex for should close
+                    close_mtx->unlock();
+                    closesocket((SOCKET)socketfd);
+                    break;
+                }
+                close_mtx->unlock();
+
+                
+
+                // Read from the socket
+                int valread = recv((SOCKET)newsocket, this->json_data, BUFFER_SIZE,0);
+                if (valread < 0) {
+                    // nothing to read
+                    continue;
+                }
+                else if (valread == 0) {
+                    printf("Connection broken\n");
+                    disconnected = true;
+                    break;
+                }
+                else break; // data read, lets parse it
+            }
+            if (disconnected) break;
+            printf("Data read from socket\n");
+
+            // Parse json_data into shot_data
+            std::string shot_string = this->json_data;
+            t_shot_data shot_data;
+            try {
+                shot_data = parse_json_shot_string(shot_string);
+                shot_data.ball_data.status = VALID;
+            }
+            catch (...) {
+                printf("No valid json data to read\n");
+                shot_data.ball_data.status = INVALID;
+                // respond with failure
+                int valsend = send((SOCKET)newsocket, resp_501, strlen(resp_501)+1, 0);
+                if (valsend < 0) { // Likely the socket is closed
+                    break; // break and start accepting new connections
+                }
+                continue;
+            }
+            printf("Valid json parsed from data\n");
+
+            // set json_data to empty to stop re-shooting
+            this->json_data[0] = '\0';
+
+
+            if (ball_mtx->try_lock()) { // try to get the lock
+                printf("Able to get lock on ball data\n");
+                if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
+                    if (ball_data->status == STALE) {
+                        *ball_data = shot_data.ball_data;
+                        ball_data->status = VALID;
+                        printf("Ball data written\n");
+                        // set response to success
+                        int valsend = send((SOCKET)newsocket, resp_200, strlen(resp_200)+1, 0);
+                        if (valsend < 0) { // Likely the socket is closed
+                            break; // break and start accepting new connections
+                        }
+                    }
+                }
+                ball_mtx->unlock();
+            } 
+            else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
+        }
+    }
+
+    
+    closesocket((SOCKET)socketfd);
+    return;
 
     #endif
     // End Windows Implementation
