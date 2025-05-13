@@ -27,11 +27,40 @@ That is all.
 #### Build
 - Navigate to the root directory. `cd ..` (or `cd ../..` if currently in the nlohmann folder).
 - Create the build directory: `mkdir build`
-- Run `make` to compile the program
+- Run `make` to compile the program. *Note: make sets `PLATFORM` to `PLATFORM_LINUX` by default
 - All *.o files and the executable should be located in the build directory.
 #### Run
 - `make run` or `./build/jSim` to run the program
 - Note: JaySim uses port 49152 for connection with a LM. If you need to change this port for any reason you can change the value in the file `TCPSocket.hpp` and rebuild with `make` or `make run`
   
 ### Windows  
-- JaySim does not currently build on Windows and 
+**This is a work in progress. Does not currently build**
+#### Install Dependencies
+##### MinGW64 Devkit
+- Navigate to https://github.com/skeeto/w64devkit/releases and download the w64devkit-x86-2.2.0.7z.exe
+- Note: Windows Defender and/or your browser may flag this as a virus. Override this and run the exe
+- This is a self extracting executable. Exctract the files to your C: drive
+- Navigate to C:/w64devkit and run w64devkit.exe. You should see a w64devkit terminal
+##### RayLib
+- Download the raylib zipped source files from https://ghithub.com/raysan5/raylib
+- Extract the files to your C: drive
+- In your w64devkit terminal navigate to C:/raylib-master/src
+- Run `make`
+#### Clone Repository
+- Clone repository into a local folder
+- `git clone https://github.com/jhauck2/JaySim.git`
+- `cd JaySim`
+#### Download json Library
+- Create a folder in the src directory for the nlohmann json library
+- `cd src`
+- `mkdir nlohmann`
+- Go to https://github.com/nlohmann/json and download the json.hpp file from the `single_include/nlohmann` folder
+- Copy/move this file into the src/nlohmann folder
+#### Build
+- Navigate to the root directory. `cd ..` (or `cd ../..` if currently in the nlohmann folder).
+- Create the build directory: `mkdir build`
+- Run `make PLATFORM=PLATFORM_WINDOWS` to compile the program
+- All *.o files and the executable should be located in the build directory.
+#### Run
+- `make run PLATFORM=PLATFORM_WINDOWS` or `./build/jSim.exe` to run the program
+- Note: JaySim uses port 49152 for connection with a LM. If you need to change this port for any reason you can change the value in the file `TCPSocket.hpp` and rebuild with `make` or `make run`
