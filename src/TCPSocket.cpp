@@ -290,7 +290,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                 // Read from the socket
                 int valread = recv((SOCKET)newsocket, this->json_data, BUFFER_SIZE,0);
                 if (valread == SOCKET_ERROR) {
-                    if(WSAGetLastError(); == WSAEWOULDBLOCK) continue; // Nothing to read
+                    if(WSAGetLastError() == WSAEWOULDBLOCK) continue; // Nothing to read
                     else ; // Some other error happend. Maybe we should close?
                 }
                 else if (valread == 0) {
