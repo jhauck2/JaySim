@@ -14,7 +14,14 @@
 #define NOUSER
 // Type required before windows.h inclusion
 typedef struct tagMSG *LPMSG;
+#ifndef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600
+#elif _WIN32_WINNT < 0x0600
+    #undef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600
+#endif
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <windows.h>
 #endif
 
@@ -28,7 +35,13 @@ class TCPSocket {
     struct sockaddr_in address;
     struct sockaddr_in client_addr;
 
+    #ifdef PLATFORM_LINUX
     int socketfd, newsocket;
+    #endif
+    #ifdef PLATFORM_WINDOWS
+    SOCKET socketfd, newsocket;
+    #endif
+
     int addrlen, client_addrlen;
 
 

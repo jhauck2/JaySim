@@ -55,20 +55,23 @@ int TCPSocket::init_socket() {
         printf("WSAStartup() error %d\n", result);
         return result;
     }
+    printf("WSAStartup() complete\n");
 
     //atexit(finalWSACleanup); // add callback to trigger when program ends. cleans up sockets
     // create the main socket, either client or server
-    socketfd = (int)socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    socketfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if ((SOCKET)socketfd == INVALID_SOCKET)
+    if (socketfd == INVALID_SOCKET)
     {
         printf("socket() error %d\n", WSAGetLastError());
         return EXIT_FAILURE;
     }
+    printf("Socket created successfully\n");
+
     // 1 to set non-blocking, 0 to set re-usable
     unsigned long argp = 1;
     // for complete info on this method, check out http://msdn.microsoft.com/en-us/library/ms740476(VS.85).aspx
-    result = setsockopt((SOCKET)socketfd, SOL_SOCKET, SO_REUSEADDR, (char*)&argp, sizeof(argp));
+    result = setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, (char*)&argp, sizeof(argp));
 
     if (result != 0) {
         printf("setsockopt() error %d\n", result);
@@ -77,24 +80,29 @@ int TCPSocket::init_socket() {
     // 1 to set non-blocking, 0 to set blocking
     argp = 1;
     // attempt to setup the socket as non-blocking
-    if (ioctlsocket((SOCKET)socketfd, FIONBIO, &argp) == SOCKET_ERROR) {
+    if (ioctlsocket(socketfd, FIONBIO, &argp) == SOCKET_ERROR) {
         printf("ioctlsocket() error %d\n", WSAGetLastError());
         return EXIT_FAILURE;
     }
 
+    address = { 0 };
+    address.sin_family = AF_INET;
+    address.sin_port = htons(PORT);
+
     // start listening on the server
-    result = bind((SOCKET)socketfd, (sockaddr *)(&address), sizeof(address));
+    result = bind(socketfd, (sockaddr *)(&address), sizeof(address));
     if (result == SOCKET_ERROR)
     {
         printf("bind() error %d\n", WSAGetLastError());
         return EXIT_FAILURE;
     }
-    result = listen((SOCKET)socketfd, /* size of connection queue */10);
+    result = listen(socketfd, /* size of connection queue */10);
     if (result == SOCKET_ERROR)
     {
         printf("listen() error %d\n", WSAGetLastError());
         return EXIT_FAILURE;
     }
+    printf("Socket set to listen\n");
 
     return 0;
 
@@ -240,7 +248,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         if (*should_close) {
             // unlock mutex for should close
             close_mtx->unlock();
-            closesocket((SOCKET)socketfd);
+            closesocket(socketfd);
             break;
         }
         close_mtx->unlock();
@@ -248,13 +256,16 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         // Accept incoming connections
         // Non-blocking accept call
         newsocket = -1;
-        newsocket = (int)accept((SOCKET)socketfd, (struct sockaddr *)&client_addr, &client_addrlen);
+        newsocket = (int)accept(socketfd, (struct sockaddr *)&client_addr, &client_addrlen);
+
+        char in_addr_str[32];
 
         if (newsocket < 0) {
             continue; // no connection detected
         }
         else {
-            printf("Connection accepted\n");
+            inet_ntop(AF_INET, &client_addr.sin_addr, in_addr_str, sizeof(in_addr_str));
+            printf("Connection accepted from %s\n", in_addr_str);
         }
 
         // We have a connection, keep reading from the same connection unti it closes
@@ -264,7 +275,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             if (*should_close) {
                 // unlock mutex for should close
                 close_mtx->unlock();
-                closesocket((SOCKET)socketfd);
+                closesocket(socketfd);
                 break;
             }
             close_mtx->unlock();
@@ -280,7 +291,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                 if (*should_close) {
                     // unlock mutex for should close
                     close_mtx->unlock();
-                    closesocket((SOCKET)socketfd);
+                    closesocket(socketfd);
                     break;
                 }
                 close_mtx->unlock();
@@ -288,7 +299,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                 
 
                 // Read from the socket
-                int valread = recv((SOCKET)newsocket, this->json_data, BUFFER_SIZE,0);
+                int valread = recv(newsocket, this->json_data, BUFFER_SIZE,0);
                 if (valread == SOCKET_ERROR) {
                     if(WSAGetLastError() == WSAEWOULDBLOCK) continue; // Nothing to read
                     else ; // Some other error happend. Maybe we should close?
@@ -314,7 +325,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                 printf("No valid json data to read\n");
                 shot_data.ball_data.status = INVALID;
                 // respond with failure
-                int valsend = send((SOCKET)newsocket, resp_501, strlen(resp_501)+1, 0);
+                int valsend = send(newsocket, resp_501, strlen(resp_501)+1, 0);
                 if (valsend < 0) { // Likely the socket is closed
                     break; // break and start accepting new connections
                 }
@@ -334,7 +345,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                         ball_data->status = VALID;
                         printf("Ball data written\n");
                         // set response to success
-                        int valsend = send((SOCKET)newsocket, resp_200, strlen(resp_200)+1, 0);
+                        int valsend = send(newsocket, resp_200, strlen(resp_200)+1, 0);
                         if (valsend < 0) { // Likely the socket is closed
                             break; // break and start accepting new connections
                         }
@@ -347,7 +358,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
     }
 
     
-    closesocket((SOCKET)socketfd);
+    closesocket(socketfd);
     return;
 
     #endif
