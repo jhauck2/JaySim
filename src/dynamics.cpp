@@ -100,6 +100,9 @@ std::vector<Vector3> get_x_dot(Vector3 pos, Vector3 vel, Vector3 om, bool on_gro
 
 // Runge-Kutta 4th degree Inegration Method
 void Dynamics::rk4(Ball *ball, double delta_time) {
+    // Don't need to do calculations when ball is at rest
+    if (ball->state == Ball::REST) return;
+
     // Make a copy of initial ball conditions
     std::vector<Vector3> x0 = {ball->position, ball->velocity, ball->omega};
     std::vector<Vector3> x = {ball->position, ball->velocity, ball->omega};

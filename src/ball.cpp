@@ -38,7 +38,7 @@ void Ball::UpdateBall(double delta) {
     if (this->state != REST) this->UpdateTrail(delta);
 
     // Check if ball is onground 
-    if (this->position.y < Ball::radius) {
+    if (this->state != REST and this->position.y < Ball::radius) {
         if (this->state == FLIGHT) this->SetState(ROLLOUT);
         this->on_ground = true;
         this->position.y = Ball::radius;
