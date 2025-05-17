@@ -209,26 +209,10 @@ int main() {
         // Dynamics::simple_integral(&ball1, delta);
         ball1.UpdateBall(delta);
 
-        // Handle button clicks
-        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            Vector2 mouse_pos = GetMousePosition();
-            // Reset Button - TODO: move this to a button checkClick() function
-            if (CheckCollisionPointRec(mouse_pos, (Rectangle){resetButton.position.x, resetButton.position.y, resetButton.size.x, resetButton.size.y})) {
-                resetButton.Click();
-                (*(resetButton.callback))(&ball1);
-            }
-            // Hit Button
-            if (CheckCollisionPointRec(mouse_pos, (Rectangle){hitButton.position.x, hitButton.position.y, hitButton.size.x, hitButton.size.y})) {
-                hitButton.Click();
-                (*(hitButton.callback))(&ball1);
-            }
-            // Hit Json Button
-            if (CheckCollisionPointRec(mouse_pos, (Rectangle){hitJsonButton.position.x, hitJsonButton.position.y, hitJsonButton.size.x, hitJsonButton.size.y})) {
-                hitJsonButton.Click();
-                (*(hitJsonButton.callback))(&ball1);
-            }
-        }
-
+        // Update button states
+        resetButton.UpdateButton(&ball1);
+        hitButton.UpdateButton(&ball1);
+        hitJsonButton.UpdateButton(&ball1);
          
 
         // Handle shot from TCPSocket
