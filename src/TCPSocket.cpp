@@ -256,7 +256,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         // Accept incoming connections
         // Non-blocking accept call
         newsocket = -1;
-        newsocket = (int)accept(socketfd, (struct sockaddr *)&client_addr, &client_addrlen);
+        newsocket = accept(socketfd, (struct sockaddr *)&client_addr, &client_addrlen);
 
         char in_addr_str[32];
 

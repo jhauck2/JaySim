@@ -14,6 +14,7 @@
 #define NOUSER
 // Type required before windows.h inclusion
 typedef struct tagMSG *LPMSG;
+// Windows version that allows inet_ntop function to be used
 #ifndef _WIN32_WINNT
     #define _WIN32_WINNT 0x0600
 #elif _WIN32_WINNT < 0x0600
