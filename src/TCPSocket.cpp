@@ -183,6 +183,9 @@ void TCPSocket::run_socket(t_shared_data *data) {
                 else if (valread == 0) {
                     printf("Connection broken\n");
                     disconnected = true;
+                    data->status_mtx->lock();
+                    *(data->lm_status) = NOT_CONNECTED;
+                    data->status_mtx->unlock();
                     break;
                 }
                 else break; // data read, lets parse it

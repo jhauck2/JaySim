@@ -169,8 +169,8 @@ int main() {
     hitJsonButton.callback = hitBallJson;
 
     // Init LM connection indicator
-    Texture2D no_lm_tex = LoadTexture("Resources/Sprites/No_LM_Indicator.png");
-    Texture2D lm_tex = LoadTexture("Resources/Sprites/LM_Indicator.png");
+    Texture2D no_lm_tex = LoadTexture("Resources/Sprites/No_LM_Indicator_small.png");
+    Texture2D lm_tex = LoadTexture("Resources/Sprites/LM_Indicator_small.png");
 
     // Load Shaders
     // ------------------------------------------------------------------------
@@ -289,8 +289,7 @@ int main() {
             hitJsonButton.DrawButton();
 
             // Draw LM status indicator
-            Vector2 indicator_pos = {screenWidth - 148, screenHeight - 148};
-            Vector2 indicator_size = {128, 128};
+            Vector2 indicator_pos = {screenWidth - 84, screenHeight - 84};
             lm_status_mtx.lock();
             if (lm_connection_status == NOT_CONNECTED){
                 DrawTexture(no_lm_tex, indicator_pos.x, indicator_pos.y, RED);
