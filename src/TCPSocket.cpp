@@ -140,6 +140,9 @@ void TCPSocket::run_socket(t_shared_data *data) {
         else {
             printf("Connection accepted\n");
         }
+        data->status_mtx->lock();
+        *(data->lm_status) = CONNECTED;
+        data->status_mtx->unlock();
 
         // We have a connection, keep reading from the same connection unti it closes
         while (1) {

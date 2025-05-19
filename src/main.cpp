@@ -168,6 +168,10 @@ int main() {
     Button hitJsonButton((Vector2){screenWidth-120, 120}, (Vector2){100, 30}, "Hit Json");
     hitJsonButton.callback = hitBallJson;
 
+    // Init LM connection indicator
+    Texture2D no_lm_tex = LoadTexture("Resources/Sprites/No_LM_Indicator.png");
+    Texture2D lm_tex = LoadTexture("Resources/Sprites/LM_Indicator.png");
+
     // Load Shaders
     // ------------------------------------------------------------------------
     // Not yet implemented
@@ -189,13 +193,17 @@ int main() {
     t_ball_data ball_data; // ball data to be shared between main thread and socket thread
     ball_data.status = STALE;
     bool close_socket = false; // how we tell the socket to close
+    LM_status lm_connection_status = NOT_CONNECTED;
     //provide mutexes for ball data and socket close indicator
     std::mutex ball_data_mtx;
     std::mutex close_socket_mtx;
+    std::mutex lm_status_mtx;
     shared_thread_data.ball_data = &ball_data;
     shared_thread_data.should_close = &close_socket;
+    shared_thread_data.lm_status = &lm_connection_status;
     shared_thread_data.ball_mtx = &ball_data_mtx;
     shared_thread_data.close_mtx = &close_socket_mtx;
+    shared_thread_data.status_mtx = &lm_status_mtx;
 
     // run this as a thread
     std::thread socket_thread(&TCPSocket::run_socket, &socket, &shared_thread_data);
@@ -279,6 +287,23 @@ int main() {
             resetButton.DrawButton();
             hitButton.DrawButton();
             hitJsonButton.DrawButton();
+
+            // Draw LM status indicator
+            Vector2 indicator_pos = {screenWidth - 148, screenHeight - 148};
+            Vector2 indicator_size = {128, 128};
+            lm_status_mtx.lock();
+            if (lm_connection_status == NOT_CONNECTED){
+                DrawTexture(no_lm_tex, indicator_pos.x, indicator_pos.y, RED);
+            }
+            else if (lm_connection_status == CONNECTED) {
+                DrawTexture(lm_tex, indicator_pos.x, indicator_pos.y, GOLD);
+            }
+            else if (lm_connection_status == READY) {
+                DrawTexture(lm_tex, indicator_pos.x, indicator_pos.y, GREEN);
+            }
+            lm_status_mtx.unlock();
+            
+            
 
         EndDrawing();
         // -------------------------------------------------------------------
