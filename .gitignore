@@ -4,3 +4,4 @@ build/
 Videos/
 src/nlohmann/
 Resources/SocketTest/SocketTest
+*.ase
