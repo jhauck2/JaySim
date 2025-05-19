@@ -184,14 +184,21 @@ int main() {
     // Set up TCP Socket
     TCPSocket socket;
     socket.init_socket();
+
+    t_shared_data shared_thread_data;
     t_ball_data ball_data; // ball data to be shared between main thread and socket thread
     ball_data.status = STALE;
     bool close_socket = false; // how we tell the socket to close
     //provide mutexes for ball data and socket close indicator
     std::mutex ball_data_mtx;
     std::mutex close_socket_mtx;
+    shared_thread_data.ball_data = &ball_data;
+    shared_thread_data.should_close = &close_socket;
+    shared_thread_data.ball_mtx = &ball_data_mtx;
+    shared_thread_data.close_mtx = &close_socket_mtx;
+
     // run this as a thread
-    std::thread socket_thread(&TCPSocket::run_socket, &socket, &ball_data, &close_socket, &ball_data_mtx, &close_socket_mtx);
+    std::thread socket_thread(&TCPSocket::run_socket, &socket, &shared_thread_data);
 
 
     SetTargetFPS(60);

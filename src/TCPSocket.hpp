@@ -26,7 +26,7 @@ typedef struct tagMSG *LPMSG;
 #include <windows.h>
 #endif
 
-#include "shotData.hpp"
+#include "sharedThreadData.hpp"
 
 #define PORT 49152
 #define BUFFER_SIZE 1024
@@ -57,7 +57,7 @@ class TCPSocket {
 
 public:
     int init_socket();
-    void run_socket(t_ball_data *ball_data, bool *should_close, std::mutex *ball_mtx, std::mutex *close_mtx);
+    void run_socket(t_shared_data *data);
     
 };
 

@@ -110,7 +110,7 @@ int TCPSocket::init_socket() {
     // End Windows implementation
 }
 
-void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mutex *ball_mtx, std::mutex *close_mtx) {
+void TCPSocket::run_socket(t_shared_data *data) {
     // Linux Implementation
     // -----------------------------------------------------------------------
 
@@ -120,14 +120,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
     // Get incoming connections
     while (1) {
         // lock mutex for should close
-        close_mtx->lock();
-        if (*should_close) {
+        data->close_mtx->lock();
+        if (*(data->should_close)) {
             // unlock mutex for should close
-            close_mtx->unlock();
+            data->close_mtx->unlock();
             close(socketfd);
             break;
         }
-        close_mtx->unlock();
+        data->close_mtx->unlock();
 
         // Accept incoming connections
         // Non-blocking accept call
@@ -144,14 +144,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         // We have a connection, keep reading from the same connection unti it closes
         while (1) {
             // lock mutex for should close
-            close_mtx->lock();
-            if (*should_close) {
+            data->close_mtx->lock();
+            if (*(data->should_close)) {
                 // unlock mutex for should close
-                close_mtx->unlock();
+                data->close_mtx->unlock();
                 close(socketfd);
                 break;
             }
-            close_mtx->unlock();
+            data->close_mtx->unlock();
 
             // Need a way to detect closed client socket
             bool disconnected = false;
@@ -160,14 +160,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             // Keep trying to read from connection until we get something
             while(1) {
                 // lock mutex for should close
-                close_mtx->lock();
-                if (*should_close) {
+                data->close_mtx->lock();
+                if (*(data->should_close)) {
                     // unlock mutex for should close
-                    close_mtx->unlock();
+                    data->close_mtx->unlock();
                     close(socketfd);
                     break;
                 }
-                close_mtx->unlock();
+                data->close_mtx->unlock();
 
                 
 
@@ -210,12 +210,12 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             this->json_data[0] = '\0';
 
 
-            if (ball_mtx->try_lock()) { // try to get the lock
+            if (data->ball_mtx->try_lock()) { // try to get the lock
                 printf("Able to get lock on ball data\n");
                 if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
-                    if (ball_data->status == STALE) {
-                        *ball_data = shot_data.ball_data;
-                        ball_data->status = VALID;
+                    if (data->ball_data->status == STALE) {
+                        *(data->ball_data) = shot_data.ball_data;
+                        data->ball_data->status = VALID;
                         printf("Ball data written\n");
                         // set response to success
                         int valsend = send(newsocket, resp_200, strlen(resp_200)+1, MSG_NOSIGNAL);
@@ -224,7 +224,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                         }
                     }
                 }
-                ball_mtx->unlock();
+                data->ball_mtx->unlock();
             } 
             else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
         }
@@ -244,14 +244,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
     // Get incoming connections
     while (1) {
         // lock mutex for should close
-        close_mtx->lock();
-        if (*should_close) {
+        data->close_mtx->lock();
+        if (*(data->should_close)) {
             // unlock mutex for should close
-            close_mtx->unlock();
+            data->close_mtx->unlock();
             closesocket(socketfd);
             break;
         }
-        close_mtx->unlock();
+        data->close_mtx->unlock();
 
         // Accept incoming connections
         // Non-blocking accept call
@@ -271,14 +271,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
         // We have a connection, keep reading from the same connection unti it closes
         while (1) {
             // lock mutex for should close
-            close_mtx->lock();
-            if (*should_close) {
+            data->close_mtx->lock();
+            if (*(data->should_close)) {
                 // unlock mutex for should close
-                close_mtx->unlock();
+                data->close_mtx->unlock();
                 closesocket(socketfd);
                 break;
             }
-            close_mtx->unlock();
+            data->close_mtx->unlock();
 
             // Need a way to detect closed client socket
             bool disconnected = false;
@@ -287,14 +287,14 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             // Keep trying to read from connection until we get something
             while(1) {
                 // lock mutex for should close
-                close_mtx->lock();
-                if (*should_close) {
+                data->close_mtx->lock();
+                if (*(data->should_close)) {
                     // unlock mutex for should close
-                    close_mtx->unlock();
+                    data->close_mtx->unlock();
                     closesocket(socketfd);
                     break;
                 }
-                close_mtx->unlock();
+                data->close_mtx->unlock();
 
                 
 
@@ -337,12 +337,12 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
             this->json_data[0] = '\0';
 
 
-            if (ball_mtx->try_lock()) { // try to get the lock
+            if (data->ball_mtx->try_lock()) { // try to get the lock
                 printf("Able to get lock on ball data\n");
                 if (shot_data.shot_options.containsBallData and shot_data.ball_data.status != INVALID) {
-                    if (ball_data->status == STALE) {
-                        *ball_data = shot_data.ball_data;
-                        ball_data->status = VALID;
+                    if (data->ball_data->status == STALE) {
+                        *(data->ball_data) = shot_data.ball_data;
+                        data->ball_data->status = VALID;
                         printf("Ball data written\n");
                         // set response to success
                         int valsend = send(newsocket, resp_200, strlen(resp_200)+1, 0);
@@ -351,7 +351,7 @@ void TCPSocket::run_socket(t_ball_data *ball_data, bool *should_close, std::mute
                         }
                     }
                 }
-                ball_mtx->unlock();
+                data->ball_mtx->unlock();
             } 
             else printf("Unable to get lock on ball data\n");// Otherwise, the main thread is still consuming ball data. Ignore shot
         }
