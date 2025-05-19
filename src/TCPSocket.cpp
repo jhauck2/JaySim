@@ -273,6 +273,9 @@ void TCPSocket::run_socket(t_shared_data *data) {
             inet_ntop(AF_INET, &client_addr.sin_addr, in_addr_str, sizeof(in_addr_str));
             printf("Connection accepted from %s\n", in_addr_str);
         }
+        data->status_mtx->lock();
+        *(data->lm_status) = CONNECTED;
+        data->status_mtx->unlock();
 
         // We have a connection, keep reading from the same connection unti it closes
         while (1) {
@@ -313,6 +316,9 @@ void TCPSocket::run_socket(t_shared_data *data) {
                 else if (valread == 0) {
                     printf("Connection broken\n");
                     disconnected = true;
+                    data->status_mtx->lock();
+                    *(data->lm_status) = NOT_CONNECTED;
+                    data->status_mtx->unlock();
                     break;
                 }
                 else break; // data read, lets parse it
