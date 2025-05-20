@@ -295,7 +295,7 @@ int main() {
                 DrawTexture(no_lm_tex, indicator_pos.x, indicator_pos.y, RED);
             }
             else if (lm_connection_status == CONNECTED) {
-                DrawTexture(lm_tex, indicator_pos.x, indicator_pos.y, GREEN);
+                DrawTexture(lm_tex, indicator_pos.x, indicator_pos.y, BLUE);
             }
             else if (lm_connection_status == READY) {
                 DrawTexture(lm_tex, indicator_pos.x, indicator_pos.y, GREEN);
